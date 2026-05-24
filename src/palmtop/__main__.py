@@ -23,12 +23,15 @@ from palmtop.tools.web_search import WebSearchTool
 
 
 def _make_cloud(tier: CloudTierConfig, label: str, log):
-    if not tier.api_key:
+    # Ollama needs no API key; all others do
+    if not tier.api_key and tier.provider != "ollama":
+        return None
+    if not tier.provider:
         return None
     from palmtop.inference.cloud import create_cloud_backend
 
     backend = create_cloud_backend(tier.provider, tier.api_key, tier.model or None)
-    log.info("Cloud %s: %s / %s", label, tier.provider, backend._model)
+    log.info("Cloud %s: %s / %s", label, tier.provider, getattr(backend, "_model", "unknown"))
     return backend
 
 

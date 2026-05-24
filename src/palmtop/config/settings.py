@@ -582,14 +582,49 @@ class Config:
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
         google_key = os.environ.get("GOOGLE_API_KEY", "")
 
+        # Provider-specific env vars — used when provider is explicitly set in TOML
+        _provider_env_keys = {
+            "anthropic": "ANTHROPIC_API_KEY",
+            "google": "GOOGLE_API_KEY",
+            "openai": "OPENAI_API_KEY",
+            "groq": "GROQ_API_KEY",
+            "together": "TOGETHER_API_KEY",
+            "fireworks": "FIREWORKS_API_KEY",
+            "deepseek": "DEEPSEEK_API_KEY",
+            "mistral": "MISTRAL_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+            "cohere": "COHERE_API_KEY",
+            # Ollama needs no key
+        }
+
+        def _resolve_tier_key(tier: CloudTierConfig) -> None:
+            """Fill in api_key from env if provider is set but key isn't."""
+            if tier.provider and not tier.api_key and tier.provider != "ollama":
+                env_var = _provider_env_keys.get(tier.provider, "")
+                if env_var:
+                    tier.api_key = os.environ.get(env_var, "")
+
         # Auto-configure tiers from env vars if not set in TOML
         if not cfg.cloud_light.api_key:
-            if google_key:
-                cfg.cloud_light.provider = cfg.cloud_light.provider or "google"
+            if cfg.cloud_light.provider:
+                # Provider explicitly set — resolve its key
+                _resolve_tier_key(cfg.cloud_light)
+            elif google_key:
+                cfg.cloud_light.provider = "google"
                 cfg.cloud_light.api_key = google_key
             elif anthropic_key:
-                cfg.cloud_light.provider = cfg.cloud_light.provider or "anthropic"
+                cfg.cloud_light.provider = "anthropic"
                 cfg.cloud_light.api_key = anthropic_key
+
+        if not cfg.cloud_heavy.api_key:
+            if cfg.cloud_heavy.provider:
+                _resolve_tier_key(cfg.cloud_heavy)
+            elif anthropic_key:
+                cfg.cloud_heavy.provider = "anthropic"
+                cfg.cloud_heavy.api_key = anthropic_key
+            elif google_key:
+                cfg.cloud_heavy.provider = "google"
+                cfg.cloud_heavy.api_key = google_key
 
         # Voice STT key: match provider to available key
         if not cfg.voice.stt_api_key:
@@ -602,14 +637,6 @@ class Config:
             elif google_key:
                 # Default fallback: use Google key for Gemini STT
                 cfg.voice.stt_api_key = google_key
-
-        if not cfg.cloud_heavy.api_key:
-            if anthropic_key:
-                cfg.cloud_heavy.provider = cfg.cloud_heavy.provider or "anthropic"
-                cfg.cloud_heavy.api_key = anthropic_key
-            elif google_key:
-                cfg.cloud_heavy.provider = cfg.cloud_heavy.provider or "google"
-                cfg.cloud_heavy.api_key = google_key
 
         cursor_key = os.environ.get("CURSOR_API_KEY", "")
         if cursor_key and not cfg.cursor.api_key:

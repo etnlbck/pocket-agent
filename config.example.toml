@@ -83,18 +83,34 @@ n_gpu_layers = -1   # -1 = offload all to GPU (Metal on Mac, Vulkan on phone)
 n_threads = 4
 
 # Cloud tiers — local model routes messages to the right tier automatically.
-# Set ANTHROPIC_API_KEY and/or GOOGLE_API_KEY env vars to enable.
-# With both keys: light defaults to Google (cheap), heavy to Anthropic (capable).
+# Set the env var for your provider (see below). With both Anthropic + Google:
+# light defaults to Google (cheap), heavy to Anthropic (capable).
+#
+# Supported providers:
+#   anthropic  — Claude (ANTHROPIC_API_KEY)
+#   google     — Gemini (GOOGLE_API_KEY)
+#   openai     — GPT-4o, o3 (OPENAI_API_KEY)
+#   groq       — Fast Llama/Mixtral (GROQ_API_KEY)
+#   together   — Open-source models (TOGETHER_API_KEY)
+#   fireworks  — Fast open-source (FIREWORKS_API_KEY)
+#   deepseek   — DeepSeek-V3/R1 (DEEPSEEK_API_KEY)
+#   mistral    — Mistral Large (MISTRAL_API_KEY)
+#   openrouter — 100+ models, one key (OPENROUTER_API_KEY)
+#   ollama     — Local via HTTP, no key needed (OLLAMA_BASE_URL)
+#   cohere     — Command R+ (COHERE_API_KEY)
 
 [cloud.light]
-# provider = "google"                   # or "anthropic"
+# provider = "google"                   # or "anthropic", "groq", "ollama", etc.
 # model = "gemini-2.5-flash"            # default for google
 # model = "claude-haiku-4-5-20251001"   # default for anthropic
+# model = "gpt-4o-mini"                 # default for openai
+# model = "llama-3.3-70b-versatile"     # default for groq
 
 [cloud.heavy]
-# provider = "anthropic"                # or "google"
+# provider = "anthropic"                # or "openai", "deepseek", "openrouter", etc.
 # model = "claude-sonnet-4-5-20250514"  # default for anthropic
-# model = "gemini-2.5-pro"              # if using google for heavy
+# model = "gpt-4o"                      # for openai
+# model = "deepseek-chat"              # for deepseek
 
 [search]
 # Fallback chain: tries providers in order, DuckDuckGo is always the final fallback.

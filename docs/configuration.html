@@ -113,24 +113,38 @@ n_threads = 4</code></pre>
     <h2 id="cloud">Cloud tiers</h2>
     <p>The agent routes messages to cloud LLMs based on complexity. Configure two tiers:</p>
     <pre><code>[cloud.light]
-provider = "google"                   # cheap, fast
-# model = "gemini-2.5-flash"         # default
+provider = "groq"                     # fast + cheap
+model = "llama-3.3-70b-versatile"
 
 [cloud.heavy]
 provider = "anthropic"                # capable
 # model = "claude-sonnet-4-5-20250514" # default</code></pre>
 
+    <h3>Supported providers</h3>
     <table>
       <thead>
-        <tr><th>Setting</th><th>Options</th><th>Description</th></tr>
+        <tr><th>Provider</th><th>Env var</th><th>Default model</th><th>Notes</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>provider</code></td><td><code>"anthropic"</code>, <code>"google"</code>, <code>"openai"</code></td><td>LLM provider</td></tr>
-        <tr><td><code>model</code></td><td>Any model ID</td><td>Overrides the default for that provider</td></tr>
+        <tr><td><code>anthropic</code></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-haiku-4-5</td><td>Claude models</td></tr>
+        <tr><td><code>google</code></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-2.5-flash</td><td>Gemini models</td></tr>
+        <tr><td><code>openai</code></td><td><code>OPENAI_API_KEY</code></td><td>gpt-4o-mini</td><td>GPT-4o, o3</td></tr>
+        <tr><td><code>groq</code></td><td><code>GROQ_API_KEY</code></td><td>llama-3.3-70b-versatile</td><td>Ultra-fast inference</td></tr>
+        <tr><td><code>together</code></td><td><code>TOGETHER_API_KEY</code></td><td>Meta-Llama-3.1-70B</td><td>Open-source hosting</td></tr>
+        <tr><td><code>fireworks</code></td><td><code>FIREWORKS_API_KEY</code></td><td>llama-v3p1-70b</td><td>Fast open-source</td></tr>
+        <tr><td><code>deepseek</code></td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-chat</td><td>DeepSeek-V3, R1</td></tr>
+        <tr><td><code>mistral</code></td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-latest</td><td>Mistral Large, Codestral</td></tr>
+        <tr><td><code>openrouter</code></td><td><code>OPENROUTER_API_KEY</code></td><td>anthropic/claude-sonnet-4</td><td>100+ models, one key</td></tr>
+        <tr><td><code>ollama</code></td><td><em>none</em></td><td>llama3.2</td><td>Local HTTP, no key needed</td></tr>
+        <tr><td><code>cohere</code></td><td><code>COHERE_API_KEY</code></td><td>command-r-plus</td><td>Command R+</td></tr>
       </tbody>
     </table>
 
-    <p>Set <code>ANTHROPIC_API_KEY</code>, <code>GOOGLE_API_KEY</code>, and/or <code>OPENAI_API_KEY</code> as environment variables.</p>
+    <div class="callout">
+      <p><strong>Ollama:</strong> Skip llama.cpp compilation entirely. Install <a href="https://ollama.com" target="_blank">Ollama</a>, pull a model (<code>ollama pull llama3.2</code>), then set <code>provider = "ollama"</code>. No API key needed &mdash; it runs locally on port 11434.</p>
+    </div>
+
+    <p>Set the env var for your chosen provider. The agent auto-detects the key and creates the backend. You can mix providers across tiers (e.g., Groq for light, Anthropic for heavy).</p>
 
     <h2 id="channels">Channels</h2>
     <p>Palmtop supports 10 messaging channels. Run one or many simultaneously.</p>
@@ -313,8 +327,16 @@ tts_voice = "Kore"          # Gemini voices: Kore, Puck, Charon, etc.</code></pr
         <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>ANTHROPIC_API_KEY</code></td><td>One of these</td><td>Anthropic API key</td></tr>
-        <tr><td><code>GOOGLE_API_KEY</code></td><td>One of these</td><td>Google AI API key</td></tr>
+        <tr><td><code>ANTHROPIC_API_KEY</code></td><td>One of these†</td><td>Anthropic API key</td></tr>
+        <tr><td><code>GOOGLE_API_KEY</code></td><td>One of these†</td><td>Google AI API key</td></tr>
+        <tr><td><code>OPENAI_API_KEY</code></td><td>No</td><td>OpenAI API key</td></tr>
+        <tr><td><code>GROQ_API_KEY</code></td><td>No</td><td>Groq API key</td></tr>
+        <tr><td><code>TOGETHER_API_KEY</code></td><td>No</td><td>Together AI API key</td></tr>
+        <tr><td><code>FIREWORKS_API_KEY</code></td><td>No</td><td>Fireworks AI API key</td></tr>
+        <tr><td><code>DEEPSEEK_API_KEY</code></td><td>No</td><td>DeepSeek API key</td></tr>
+        <tr><td><code>MISTRAL_API_KEY</code></td><td>No</td><td>Mistral API key</td></tr>
+        <tr><td><code>OPENROUTER_API_KEY</code></td><td>No</td><td>OpenRouter API key</td></tr>
+        <tr><td><code>COHERE_API_KEY</code></td><td>No</td><td>Cohere API key</td></tr>
         <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Yes*</td><td>From @BotFather</td></tr>
         <tr><td><code>DISCORD_BOT_TOKEN</code></td><td>No</td><td>Discord bot token</td></tr>
         <tr><td><code>SLACK_BOT_TOKEN</code></td><td>No</td><td>Slack Bot User OAuth Token</td></tr>
@@ -336,7 +358,7 @@ tts_voice = "Kore"          # Gemini voices: Kore, Puck, Charon, etc.</code></pr
         <tr><td><code>CURSOR_API_KEY</code></td><td>No</td><td>Cursor Cloud Agents</td></tr>
       </tbody>
     </table>
-    <p><small>* Required only if Telegram is your channel. At minimum you need one LLM key + one channel configured.</small></p>
+    <p><small>* Required only if Telegram is your channel. † At minimum you need one LLM provider key (any of the listed providers) + one channel configured.</small></p>
 
     <h2 id="security">Security</h2>
     <p>Palmtop includes a supply chain audit tool that checks dependencies for known attacks:</p>
