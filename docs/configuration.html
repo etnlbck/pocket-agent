@@ -99,7 +99,7 @@ url = "https://calendar.app.google/another-link"
 desc = "Deep-dive into requirements"</code></pre>
 
     <h2 id="inference">Inference</h2>
-    <p>Local model configuration for on-device inference via llama.cpp:</p>
+    <p>Local model configuration for on-device inference via llama.cpp. This is the recommended local backend for Termux/phone deployments &mdash; compiled with Vulkan GPU acceleration, no extra daemon needed, minimal memory overhead.</p>
     <pre><code>[inference]
 model_path = "models/phi-3.5-mini-instruct-q4_k_m.gguf"
 n_ctx = 4096          # Context window
@@ -141,7 +141,7 @@ provider = "anthropic"                # capable
     </table>
 
     <div class="callout">
-      <p><strong>Ollama:</strong> Skip llama.cpp compilation entirely. Install <a href="https://ollama.com" target="_blank">Ollama</a>, pull a model (<code>ollama pull llama3.2</code>), then set <code>provider = "ollama"</code>. No API key needed &mdash; it runs locally on port 11434.</p>
+      <p><strong>Ollama (desktop/laptop alternative):</strong> On macOS or Linux desktops, you can skip llama.cpp compilation by using Ollama instead. Install <a href="https://ollama.com" target="_blank">Ollama</a>, pull a model (<code>ollama pull llama3.2</code>), then set <code>provider = "ollama"</code> in a cloud tier. No API key needed. <em>On Termux/phone, stick with the built-in llama.cpp &mdash; it's lighter (no separate daemon) and has direct Vulkan GPU access.</em></p>
     </div>
 
     <p>Set the env var for your chosen provider. The agent auto-detects the key and creates the backend. You can mix providers across tiers (e.g., Groq for light, Anthropic for heavy).</p>

@@ -86,7 +86,7 @@ export TELEGRAM_BOT_TOKEN="123456:ABC..."  # or your channel's token</code></pre
 git clone https://github.com/jbxter/palmtop.git
 cd palmtop
 bash bootstrap_termux.sh</code></pre>
-    <p>The bootstrap script installs Python, uv, llama.cpp with Vulkan GPU acceleration, and all dependencies. Takes about 10 minutes on a fresh Termux install.</p>
+    <p>The bootstrap script installs Python, uv, llama.cpp with Vulkan GPU acceleration, and all dependencies. Takes about 10 minutes on a fresh Termux install. The local llama.cpp model runs in-process with direct GPU access &mdash; no extra daemons, minimal footprint.</p>
 
     <p><span class="step">2</span> <strong>Configure and run</strong></p>
     <pre><code>cp config.example.toml config.toml
