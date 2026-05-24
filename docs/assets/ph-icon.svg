@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#f0c040" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="phoneGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1e1e"/>
+      <stop offset="100%" stop-color="#141414"/>
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#111"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="240" height="240" rx="48" fill="#0a0a0a"/>
+
+  <!-- Ambient glow -->
+  <circle cx="120" cy="105" r="90" fill="url(#glow)"/>
+
+  <!-- Phone body -->
+  <rect x="72" y="32" width="96" height="176" rx="16" fill="url(#phoneGrad)" stroke="#333" stroke-width="1.5"/>
+
+  <!-- Screen -->
+  <rect x="80" y="48" width="80" height="140" rx="4" fill="url(#screenGrad)"/>
+
+  <!-- Screen content: terminal lines -->
+  <rect x="88" y="58" width="28" height="3" rx="1.5" fill="#f0c040" opacity="0.9"/>
+  <rect x="88" y="67" width="56" height="3" rx="1.5" fill="#e8e8e8" opacity="0.4"/>
+  <rect x="88" y="76" width="44" height="3" rx="1.5" fill="#e8e8e8" opacity="0.3"/>
+  <rect x="88" y="85" width="52" height="3" rx="1.5" fill="#e8e8e8" opacity="0.3"/>
+
+  <!-- Pulse rings from phone (agent is alive) -->
+  <circle cx="120" cy="120" r="32" fill="none" stroke="#f0c040" stroke-width="1.5" opacity="0.15"/>
+  <circle cx="120" cy="120" r="52" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.08"/>
+  <circle cx="120" cy="120" r="72" fill="none" stroke="#f0c040" stroke-width="0.75" opacity="0.04"/>
+
+  <!-- Agent brain icon on screen -->
+  <circle cx="120" cy="118" r="14" fill="none" stroke="#f0c040" stroke-width="2"/>
+  <circle cx="114" cy="115" r="2" fill="#f0c040"/>
+  <circle cx="126" cy="115" r="2" fill="#f0c040"/>
+  <!-- Neural connections -->
+  <line x1="112" y1="108" x2="106" y2="100" stroke="#f0c040" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+  <line x1="128" y1="108" x2="134" y2="100" stroke="#f0c040" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+  <line x1="120" y1="104" x2="120" y2="96" stroke="#f0c040" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="106" cy="99" r="2" fill="#f0c040" opacity="0.7"/>
+  <circle cx="134" cy="99" r="2" fill="#f0c040" opacity="0.7"/>
+  <circle cx="120" cy="95" r="2" fill="#f0c040" opacity="0.7"/>
+  <!-- Smile -->
+  <path d="M115 122 Q120 127 125 122" fill="none" stroke="#f0c040" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Status bar dots on screen top -->
+  <circle cx="116" cy="42" r="2" fill="#333"/>
+  <circle cx="124" cy="42" r="2" fill="#333"/>
+
+  <!-- Bottom bar -->
+  <rect x="104" y="195" width="32" height="4" rx="2" fill="#333"/>
+
+  <!-- Channel indicators floating around phone -->
+  <!-- Telegram -->
+  <circle cx="52" cy="72" r="10" fill="#141414" stroke="#2a2a2a" stroke-width="1"/>
+  <path d="M48 72 L56 68 L53 73 L54 77 Z" fill="#f0c040" opacity="0.8"/>
+
+  <!-- Web -->
+  <circle cx="188" cy="72" r="10" fill="#141414" stroke="#2a2a2a" stroke-width="1"/>
+  <circle cx="188" cy="72" r="5" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.8"/>
+  <line x1="183" y1="72" x2="193" y2="72" stroke="#f0c040" stroke-width="0.8" opacity="0.8"/>
+  <line x1="188" y1="67" x2="188" y2="77" stroke="#f0c040" stroke-width="0.8" opacity="0.8"/>
+
+  <!-- Tools -->
+  <circle cx="52" cy="168" r="10" fill="#141414" stroke="#2a2a2a" stroke-width="1"/>
+  <path d="M48 164 L52 168 L56 164 M52 168 L52 173" stroke="#f0c040" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+  <!-- Memory -->
+  <circle cx="188" cy="168" r="10" fill="#141414" stroke="#2a2a2a" stroke-width="1"/>
+  <rect x="184" y="164" width="8" height="8" rx="1" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.8"/>
+  <line x1="186" y1="167" x2="190" y2="167" stroke="#f0c040" stroke-width="0.8" opacity="0.8"/>
+  <line x1="186" y1="170" x2="190" y2="170" stroke="#f0c040" stroke-width="0.8" opacity="0.8"/>
+</svg>
