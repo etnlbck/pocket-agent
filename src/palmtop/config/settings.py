@@ -234,6 +234,13 @@ class DiscordConfig:
     channel_id: int = 0  # 0 = any channel (DMs always allowed)
 
 
+@dataclass
+class SlackConfig:
+    bot_token: str = ""  # xoxb-...
+    app_token: str = ""  # xapp-... (Socket Mode)
+    allowed_users: list[str] = field(default_factory=list)  # Slack user IDs (strings)
+
+
 def _default_channel() -> Channel:
     return "sms" if detect_runtime() == "phone" else "telegram"
 
@@ -250,6 +257,7 @@ class Config:
     cloud_heavy: CloudTierConfig = field(default_factory=CloudTierConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     discord: DiscordConfig = field(default_factory=DiscordConfig)
+    slack: SlackConfig = field(default_factory=SlackConfig)
     sms: SmsConfig = field(default_factory=SmsConfig)
     web: WebConfig = field(default_factory=WebConfig)
     atlassian: AtlassianConfig = field(default_factory=AtlassianConfig)
@@ -329,6 +337,10 @@ class Config:
                 for k, v in raw["discord"].items():
                     if hasattr(cfg.discord, k):
                         setattr(cfg.discord, k, v)
+            if "slack" in raw:
+                for k, v in raw["slack"].items():
+                    if hasattr(cfg.slack, k):
+                        setattr(cfg.slack, k, v)
             if "atlassian" in raw:
                 for k, v in raw["atlassian"].items():
                     if hasattr(cfg.atlassian, k):
@@ -413,6 +425,13 @@ class Config:
         discord_token = os.environ.get("DISCORD_BOT_TOKEN", "")
         if discord_token and not cfg.discord.bot_token:
             cfg.discord.bot_token = discord_token
+
+        slack_bot_token = os.environ.get("SLACK_BOT_TOKEN", "")
+        if slack_bot_token and not cfg.slack.bot_token:
+            cfg.slack.bot_token = slack_bot_token
+        slack_app_token = os.environ.get("SLACK_APP_TOKEN", "")
+        if slack_app_token and not cfg.slack.app_token:
+            cfg.slack.app_token = slack_app_token
 
         model = os.environ.get("MODEL_PATH")
         if model:

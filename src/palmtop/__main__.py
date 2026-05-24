@@ -578,6 +578,23 @@ def main() -> None:
                     )
                     runner.add(discord_ch)
 
+            elif ch_name == "slack":
+                try:
+                    from palmtop.channels.slack import SlackChannel
+                except ImportError:
+                    log.error("Slack channel requires slack-bolt: uv sync --extra slack")
+                    raise SystemExit(1) from None
+
+                if not cfg.slack.bot_token or not cfg.slack.app_token:
+                    log.warning("Slack channel enabled but tokens not set — skipped")
+                else:
+                    slack_ch = SlackChannel(
+                        bot_token=cfg.slack.bot_token,
+                        app_token=cfg.slack.app_token,
+                        allowed_users=cfg.slack.allowed_users or None,
+                    )
+                    runner.add(slack_ch)
+
             else:
                 log.warning("Channel '%s' not yet implemented — skipped", ch_name)
 

@@ -63,7 +63,7 @@ accent_dim = "#c49a20"
 # Multi-channel mode — run multiple channels simultaneously:
 # channels = ["telegram", "sms", "email"]
 #
-# Supported: "telegram", "sms", "email", "discord". More coming: slack, matrix.
+# Supported: "telegram", "sms", "email", "discord", "slack". More coming: matrix.
 # All channels share the same AgentLoop (memory, tools, inference).
 # Defaults to sms on phone, telegram on dev if neither is set.
 # Telegram channel: uv sync --extra telegram  (bootstrap_termux.sh installs this)
@@ -116,6 +116,13 @@ n_threads = 4
 # allowed_users = []     # Discord user IDs (integers)
 # guild_id = 0           # restrict to one server (0 = any)
 # channel_id = 0         # restrict to one text channel (0 = any, DMs always work)
+
+[slack]
+# Socket Mode — no public URL needed (perfect for self-hosted).
+# Set SLACK_BOT_TOKEN and SLACK_APP_TOKEN env vars instead of putting them here.
+# bot_token = "xoxb-..."        # Bot User OAuth Token
+# app_token = "xapp-..."        # App-Level Token (Socket Mode)
+# allowed_users = []             # Slack user IDs (strings, e.g. "U12345ABC")
 
 [email]
 # AgentMail — gives the agent his own email inbox
