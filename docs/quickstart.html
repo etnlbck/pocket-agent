@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quickstart &mdash; Pocket Agent</title>
+  <meta name="description" content="Get Pocket Agent running in under 15 minutes on macOS, Linux, or Android (Termux).">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="container">
+    <a href="./" class="nav-brand">Pocket Agent</a>
+    <div class="nav-links">
+      <a href="quickstart" class="nav-link active">Quickstart</a>
+      <a href="configuration" class="nav-link">Config</a>
+      <a href="architecture" class="nav-link">Architecture</a>
+      <a href="https://github.com/etnlbck/pocket-agent" target="_blank" rel="noopener" class="nav-cta">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <h4>Getting started</h4>
+    <a href="#prerequisites" class="active">Prerequisites</a>
+    <a href="#macos-linux">macOS / Linux</a>
+    <a href="#android">Android (Termux)</a>
+    <a href="#configure">Configure</a>
+    <a href="#run">Run</a>
+    <h4>Deploy</h4>
+    <a href="#cloudflare-tunnel">Cloudflare Tunnel</a>
+    <a href="#git-push-deploy">Git-push deploy</a>
+    <a href="#auto-start">Auto-start on boot</a>
+  </aside>
+
+  <main class="docs-content">
+    <h1>Quickstart</h1>
+    <p class="lead">Get a production AI agent running in under 15 minutes &mdash; on your laptop for development, or on an Android phone for always-on deployment.</p>
+
+    <h2 id="prerequisites">Prerequisites</h2>
+    <ul>
+      <li><strong>Python 3.11+</strong></li>
+      <li><strong><a href="https://docs.astral.sh/uv/">uv</a></strong> &mdash; fast Python package manager</li>
+      <li>At least one API key: <code>ANTHROPIC_API_KEY</code> or <code>GOOGLE_API_KEY</code></li>
+      <li>A Telegram bot token from <a href="https://t.me/botfather" target="_blank" rel="noopener">@BotFather</a></li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>Tip:</strong> You can run with just a cloud API key and no local model. The local model (llama.cpp) is optional &mdash; it saves money on simple messages but isn't required.</p>
+    </div>
+
+    <h2 id="macos-linux">macOS / Linux</h2>
+
+    <p><span class="step">1</span> <strong>Clone and bootstrap</strong></p>
+    <pre><code>git clone https://github.com/etnlbck/pocket-agent.git
+cd pocket-agent
+bash bootstrap_macos.sh</code></pre>
+    <p>The bootstrap script installs uv and project dependencies. On macOS it uses Homebrew; on Linux it installs uv directly.</p>
+
+    <p><span class="step">2</span> <strong>Configure</strong></p>
+    <pre><code>cp config.example.toml config.toml</code></pre>
+    <p>Edit <code>config.toml</code> &mdash; set your <code>[persona]</code> section and API keys. See the <a href="configuration">Configuration guide</a> for all options.</p>
+
+    <p><span class="step">3</span> <strong>Set secrets</strong></p>
+    <pre><code>export ANTHROPIC_API_KEY="sk-ant-..."
+export TELEGRAM_BOT_TOKEN="123456:ABC..."</code></pre>
+
+    <p><span class="step">4</span> <strong>Run</strong></p>
+    <pre><code>uv run python -m pocket_agent</code></pre>
+
+    <h2 id="android">Android (Termux)</h2>
+
+    <div class="callout">
+      <p><strong>Important:</strong> Install <a href="https://f-droid.org/en/packages/com.termux/" target="_blank" rel="noopener">Termux from F-Droid</a>, not the Play Store. The Play Store version is outdated and won't work.</p>
+    </div>
+
+    <p><span class="step">1</span> <strong>Clone and bootstrap</strong></p>
+    <pre><code>pkg update && pkg install git
+git clone https://github.com/etnlbck/pocket-agent.git
+cd pocket-agent
+bash bootstrap_termux.sh</code></pre>
+    <p>The bootstrap script installs Python, uv, llama.cpp with Vulkan GPU acceleration, and all dependencies. Takes about 10 minutes on a fresh Termux install.</p>
+
+    <p><span class="step">2</span> <strong>Configure and run</strong></p>
+    <pre><code>cp config.example.toml config.toml
+# Edit config.toml with your settings
+export ANTHROPIC_API_KEY="sk-ant-..."
+export TELEGRAM_BOT_TOKEN="123456:ABC..."
+uv run python -m pocket_agent</code></pre>
+
+    <h2 id="configure">Configure your persona</h2>
+    <p>The <code>[persona]</code> section in <code>config.toml</code> drives everything &mdash; system prompts, web presence, email branding:</p>
+    <pre><code>[persona]
+name = "My Agent"
+tagline = "AI-powered executive assistant"
+owner_name = "Your Name"
+domain = "yourdomain.com"
+location = "San Francisco"
+
+personality = """\
+Sharp analytical thinking with genuine warmth. \
+Casual but competent."""
+
+capabilities = [
+    "Scheduling and time management",
+    "Business decisions and tradeoff analysis",
+    "Research and recommendations",
+]
+
+services = [
+    "Full-stack web development",
+    "AI/ML integrations",
+    "Technical consulting",
+]</code></pre>
+    <p>See the full <a href="configuration">Configuration reference</a> for all options.</p>
+
+    <h2 id="run">Verify it's working</h2>
+    <p>Once the agent starts, you should see:</p>
+    <pre><code>08:00:01 Cloud heavy: anthropic / claude-sonnet-4-5
+08:00:01 Telegram bot started
+08:00:01 Web channel started on 0.0.0.0:8000
+08:00:01 Ready.</code></pre>
+    <p>Send a message to your Telegram bot. If it replies, you're live.</p>
+
+    <h2 id="cloudflare-tunnel">Expose with Cloudflare Tunnel</h2>
+    <p>To make the web channel accessible from the internet:</p>
+    <pre><code># Install cloudflared
+# macOS: brew install cloudflared
+# Termux: pkg install cloudflared
+
+# Login and create a tunnel
+cloudflared tunnel login
+cloudflared tunnel create pocket-agent
+
+# Route your domain
+cloudflared tunnel route dns pocket-agent yourdomain.com
+
+# Run the tunnel
+cloudflared tunnel run pocket-agent</code></pre>
+
+    <h2 id="git-push-deploy">Git-push deploy</h2>
+    <p>Once the agent is running on your phone, set it up as a git remote for zero-downtime deploys from your laptop:</p>
+    <pre><code># On the phone (Termux)
+bash scripts/setup-git-server.sh
+
+# On your laptop
+git remote add phone ssh://phone-ip:8022/path/to/pocket-agent.git
+git push phone main
+# Auto-pulls, restarts agent, reconnects tunnel</code></pre>
+    <p>The post-receive hook handles everything. See <code>scripts/git-post-receive.sh</code> for details.</p>
+
+    <h2 id="auto-start">Auto-start on boot</h2>
+    <p>With <a href="https://f-droid.org/en/packages/com.termux.boot/" target="_blank" rel="noopener">Termux:Boot</a>, the agent starts automatically when your phone reboots:</p>
+    <pre><code>bash scripts/setup-boot.sh</code></pre>
+    <p>This creates a boot script that starts the agent and Cloudflare Tunnel on device startup.</p>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>Pocket Agent &middot; MIT License &middot; <a href="https://github.com/etnlbck/pocket-agent">GitHub</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuration &mdash; Pocket Agent</title>
+  <meta name="description" content="Full config.toml reference for Pocket Agent: persona, inference, channels, tools, and more.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="container">
+    <a href="./" class="nav-brand">Pocket Agent</a>
+    <div class="nav-links">
+      <a href="quickstart" class="nav-link">Quickstart</a>
+      <a href="configuration" class="nav-link active">Config</a>
+      <a href="architecture" class="nav-link">Architecture</a>
+      <a href="https://github.com/etnlbck/pocket-agent" target="_blank" rel="noopener" class="nav-cta">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <h4>Config sections</h4>
+    <a href="#persona" class="active">Persona</a>
+    <a href="#brand">Brand colors</a>
+    <a href="#booking">Booking links</a>
+    <a href="#inference">Inference</a>
+    <a href="#cloud">Cloud tiers</a>
+    <a href="#channels">Channels</a>
+    <a href="#tools">Tools</a>
+    <a href="#mcp">MCP servers</a>
+    <a href="#engine">Sovereign engine</a>
+    <a href="#monitor">Monitor</a>
+    <a href="#voice">Voice</a>
+    <a href="#env-vars">Environment variables</a>
+  </aside>
+
+  <main class="docs-content">
+    <h1>Configuration</h1>
+    <p class="lead">Everything is configured in <code>config.toml</code>. Copy <code>config.example.toml</code> as a starting point. Secrets should use environment variables, not this file.</p>
+
+    <h2 id="persona">Persona</h2>
+    <p>The <code>[persona]</code> section defines your agent's identity. It drives system prompts, web presence, and email branding.</p>
+    <pre><code>[persona]
+name = "My Agent"                    # Agent's display name
+tagline = "Your AI-powered assistant" # Shown in emails + web
+owner_name = "Your Name"             # The human behind the agent
+domain = "example.com"               # Your website domain
+booking_url = ""                     # Google Calendar link (optional)
+linkedin_url = ""                    # LinkedIn profile (optional)
+location = "San Francisco"
+timezone = "America/Los_Angeles"
+
+# Core personality (injected into system prompt)
+personality = """\
+You combine sharp analytical thinking with genuine warmth. \
+Casual but competent."""
+
+# What the agent helps with
+capabilities = [
+    "Scheduling, prioritization, and time management",
+    "Business decisions and tradeoff analysis",
+    "Research and recommendations",
+]
+
+# What services you offer (for the web chat agent)
+services = [
+    "Full-stack web apps (Next.js, React, Python, Node)",
+    "AI/ML integrations and automation",
+    "Technical consulting and architecture reviews",
+]</code></pre>
+
+    <h2 id="brand">Brand colors</h2>
+    <p>CSS variables used in email templates and the web interface. Match these to your website's design.</p>
+    <pre><code>[persona.brand]
+bg = "#0a0a0a"
+surface = "#141414"
+border = "#2a2a2a"
+text = "#e8e8e8"
+text_muted = "#888888"
+accent = "#f0c040"
+accent_dim = "#c49a20"</code></pre>
+
+    <h2 id="booking">Booking links</h2>
+    <p>Optional booking links shown in outreach emails. Add as many as you want using TOML's array-of-tables syntax:</p>
+    <pre><code>[[persona.booking]]
+name = "Free Intro Call"
+url = "https://calendar.app.google/your-link"
+desc = "Quick chat to discuss your project"
+
+[[persona.booking]]
+name = "Paid Discovery Session"
+duration = "60 min"
+url = "https://calendar.app.google/another-link"
+desc = "Deep-dive into requirements"</code></pre>
+
+    <h2 id="inference">Inference</h2>
+    <p>Local model configuration for on-device inference via llama.cpp:</p>
+    <pre><code>[inference]
+model_path = "models/phi-3.5-mini-instruct-q4_k_m.gguf"
+n_ctx = 4096          # Context window
+n_gpu_layers = -1     # -1 = all layers on GPU (Metal/Vulkan)
+n_threads = 4</code></pre>
+
+    <div class="callout">
+      <p><strong>No local model?</strong> That's fine. If no model file is present, the agent routes everything to cloud backends. The local model saves money on simple messages but isn't required.</p>
+    </div>
+
+    <h2 id="cloud">Cloud tiers</h2>
+    <p>The agent routes messages to cloud LLMs based on complexity. Configure two tiers:</p>
+    <pre><code>[cloud.light]
+provider = "google"                   # cheap, fast
+# model = "gemini-2.5-flash"         # default
+
+[cloud.heavy]
+provider = "anthropic"                # capable
+# model = "claude-sonnet-4-5-20250514" # default</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Setting</th><th>Options</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>provider</code></td><td><code>"anthropic"</code>, <code>"google"</code>, <code>"openai"</code></td><td>LLM provider</td></tr>
+        <tr><td><code>model</code></td><td>Any model ID</td><td>Overrides the default for that provider</td></tr>
+      </tbody>
+    </table>
+
+    <p>Set <code>ANTHROPIC_API_KEY</code>, <code>GOOGLE_API_KEY</code>, and/or <code>OPENAI_API_KEY</code> as environment variables.</p>
+
+    <h2 id="channels">Channels</h2>
+    <h3>Telegram</h3>
+    <pre><code>[telegram]
+# Set TELEGRAM_BOT_TOKEN env var
+# allowed_users = [123456789]  # restrict to specific user IDs</code></pre>
+
+    <h3>SMS (Termux:API)</h3>
+    <pre><code>[sms]
+enabled = false
+allowed_numbers = ["+15551234567"]
+allowed_sender_names = []
+poll_interval = 5</code></pre>
+
+    <h2 id="tools">Tools</h2>
+    <p>All tools are optional. Configure only what you need.</p>
+
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Config key</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Web search</td><td><code>[search]</code></td><td>Brave, Serper, DuckDuckGo fallback chain</td></tr>
+        <tr><td>Google Calendar</td><td>automatic</td><td>Read/write events (OAuth)</td></tr>
+        <tr><td>Email</td><td><code>[email]</code></td><td>Send/receive via AgentMail</td></tr>
+        <tr><td>Jira + Confluence</td><td><code>[atlassian]</code></td><td>Search, create, update issues and wiki</td></tr>
+        <tr><td>Vercel</td><td><code>[vercel]</code></td><td>Deploy projects</td></tr>
+        <tr><td>Railway</td><td><code>[railway]</code></td><td>Redeploy services</td></tr>
+        <tr><td>Cursor</td><td><code>[cursor]</code></td><td>Delegate coding tasks to Cursor Cloud Agents</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Web search</h3>
+    <pre><code>[search]
+# Fallback chain: serper -> brave -> duckduckgo
+# Set via env vars (multiple keys rotate automatically):
+#   BRAVE_API_KEYS="key1,key2,key3"
+#   SERPER_API_KEYS="key1,key2,key3"
+# preferred_order = ["serper", "brave"]</code></pre>
+
+    <h3>Email (AgentMail)</h3>
+    <pre><code>[email]
+# api_key = "am_..."       # or set AGENTMAIL_API_KEY
+# inbox_id = "inbox_..."   # or set AGENTMAIL_INBOX_ID</code></pre>
+
+    <h3>Atlassian (Jira + Confluence)</h3>
+    <pre><code>[atlassian]
+# domain = "yourcompany.atlassian.net"
+# email = "you@example.com"
+# Set ATLASSIAN_API_TOKEN env var</code></pre>
+
+    <h3>Deploy tools</h3>
+    <pre><code>[vercel]
+# enabled = true
+# default_project_id = "prj_xxxxxxxx"
+# require_blessing = true    # Telegram approval before deploy
+
+[railway]
+# enabled = true
+# default_project_id = "uuid"
+# default_service_id = "uuid"
+# require_blessing = true</code></pre>
+
+    <h2 id="mcp">MCP servers</h2>
+    <p>Connect to any Model Context Protocol server. The agent acts as an MCP client, launching servers on-demand:</p>
+    <pre><code>[[mcp.servers]]
+name = "atlassian"
+description = "Jira and Confluence"
+command = ["python", "-m", "pocket_agent.mcp.atlassian_server"]
+
+[[mcp.servers]]
+name = "custom-kb"
+description = "Custom knowledge base"
+command = ["python", "-m", "my_mcp_server"]</code></pre>
+
+    <h2 id="engine">Sovereign engine</h2>
+    <p>The autonomous engine handles multi-step tasks triggered via chat:</p>
+    <pre><code>[engine]
+enabled = true   # requires cloud API keys</code></pre>
+    <p>Trigger from Telegram: <code>/engine draft a blog post</code> or <code>engine: research competitors</code></p>
+
+    <h2 id="monitor">Proactive monitor</h2>
+    <p>The agent checks for changes and reaches out when something needs attention:</p>
+    <pre><code>[monitor]
+enabled = true
+calendar_interval_minutes = 10
+email_interval_minutes = 15
+jira_interval_minutes = 30
+quiet_hours_start = 22    # 10 PM
+quiet_hours_end = 7       # 7 AM</code></pre>
+
+    <h2 id="voice">Voice</h2>
+    <pre><code>[voice]
+enabled = false
+stt_provider = "gemini"     # "gemini", "whisper_cpp", "openai"
+tts_enabled = false
+tts_provider = "gemini"
+tts_voice = "Kore"          # Gemini voices: Kore, Puck, Charon, etc.</code></pre>
+
+    <h2 id="env-vars">Environment variables</h2>
+    <p>Secrets should be set as environment variables, not in <code>config.toml</code>:</p>
+    <table>
+      <thead>
+        <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ANTHROPIC_API_KEY</code></td><td>One of these</td><td>Anthropic API key</td></tr>
+        <tr><td><code>GOOGLE_API_KEY</code></td><td>One of these</td><td>Google AI API key</td></tr>
+        <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Yes</td><td>From @BotFather</td></tr>
+        <tr><td><code>AGENTMAIL_API_KEY</code></td><td>No</td><td>AgentMail inbox access</td></tr>
+        <tr><td><code>ATLASSIAN_API_TOKEN</code></td><td>No</td><td>Jira/Confluence access</td></tr>
+        <tr><td><code>BRAVE_API_KEYS</code></td><td>No</td><td>Comma-separated Brave search keys</td></tr>
+        <tr><td><code>SERPER_API_KEYS</code></td><td>No</td><td>Comma-separated Serper keys</td></tr>
+        <tr><td><code>VERCEL_TOKEN</code></td><td>No</td><td>Vercel deploy access</td></tr>
+        <tr><td><code>RAILWAY_TOKEN</code></td><td>No</td><td>Railway deploy access</td></tr>
+        <tr><td><code>CURSOR_API_KEY</code></td><td>No</td><td>Cursor Cloud Agents</td></tr>
+      </tbody>
+    </table>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>Pocket Agent &middot; MIT License &middot; <a href="https://github.com/etnlbck/pocket-agent">GitHub</a></p>
+</footer>
+
+</body>
+</html>

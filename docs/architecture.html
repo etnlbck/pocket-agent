@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture &mdash; Pocket Agent</title>
+  <meta name="description" content="System architecture of Pocket Agent: inference cascade, security model, memory system, and module layout.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="container">
+    <a href="./" class="nav-brand">Pocket Agent</a>
+    <div class="nav-links">
+      <a href="quickstart" class="nav-link">Quickstart</a>
+      <a href="configuration" class="nav-link">Config</a>
+      <a href="architecture" class="nav-link active">Architecture</a>
+      <a href="https://github.com/etnlbck/pocket-agent" target="_blank" rel="noopener" class="nav-cta">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <h4>System design</h4>
+    <a href="#overview" class="active">Overview</a>
+    <a href="#inference-cascade">Inference cascade</a>
+    <a href="#security">Security model</a>
+    <a href="#memory">Memory system</a>
+    <a href="#tool-dispatch">Tool dispatch</a>
+    <a href="#web-presence">Web presence</a>
+    <h4>Internals</h4>
+    <a href="#agent-loop">Agent loop</a>
+    <a href="#sovereign-engine">Sovereign engine</a>
+    <a href="#mcp-gateway">MCP gateway</a>
+    <a href="#project-structure">Project structure</a>
+  </aside>
+
+  <main class="docs-content">
+    <h1>Architecture</h1>
+    <p class="lead">A production-grade agent with clear separation between channels, inference, tools, and storage. Designed to run on constrained hardware without compromising capability.</p>
+
+    <h2 id="overview">Overview</h2>
+    <p>The system has four layers:</p>
+    <ol>
+      <li><strong>Channels</strong> &mdash; Telegram, SMS, web chat (how users reach the agent)</li>
+      <li><strong>Core loop</strong> &mdash; message routing, tool dispatch, memory management</li>
+      <li><strong>Inference</strong> &mdash; local model + cloud LLM cascade</li>
+      <li><strong>Tools + Storage</strong> &mdash; external integrations and persistent state</li>
+    </ol>
+
+    <div class="arch-diagram">
+      <pre>
+                    &#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+                    &#x2502;  <span class="highlight">Telegram</span>   &#x2502;
+                    &#x2502;    Bot      &#x2502;
+                    &#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x252C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;
+                           &#x2502;
+&#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;        &#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2534;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;        &#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+&#x2502;   <span class="highlight">SMS</span>    &#x251C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2524;  <span class="highlight">AgentLoop</span>  &#x251C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2524;  Tool        &#x2502;
+&#x2502; (Termux) &#x2502;        &#x2502;  (core)     &#x2502;        &#x2502;  Registry    &#x2502;
+&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;        &#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x252C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;        &#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x252C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;
+                           &#x2502;                      &#x2502;
+&#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;        &#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2534;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;        &#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2534;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+&#x2502; <span class="highlight">Web Chat</span> &#x251C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2524;  Inference  &#x2502;        &#x2502; Calendar     &#x2502;
+&#x2502; (public) &#x2502;        &#x2502;  Cascade    &#x2502;        &#x2502; Email        &#x2502;
+&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;        &#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;        &#x2502; Jira         &#x2502;
+                    local &#x2192; light &#x2192; heavy  &#x2502; Search       &#x2502;
+                                           &#x2502; Deploy       &#x2502;
+                    Security boundary:     &#x2502; MCP Gateway  &#x2502;
+                    Web visitors get a     &#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;
+                    sandboxed <span class="highlight">WebAgent</span>
+                    with NO tool access</pre>
+    </div>
+
+    <h2 id="inference-cascade">Inference cascade</h2>
+    <p>Messages flow through a three-tier cascade. Each tier is optional &mdash; if one isn't configured, it's skipped:</p>
+
+    <table>
+      <thead>
+        <tr><th>Tier</th><th>Default</th><th>When it fires</th><th>Cost</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Local</strong></td>
+          <td>Phi-3.5 Mini (Q4)</td>
+          <td>Simple messages, routing decisions</td>
+          <td>Free (on-device)</td>
+        </tr>
+        <tr>
+          <td><strong>Light</strong></td>
+          <td>Gemini Flash</td>
+          <td>Medium complexity, longer context</td>
+          <td>Very cheap</td>
+        </tr>
+        <tr>
+          <td><strong>Heavy</strong></td>
+          <td>Claude Sonnet</td>
+          <td>Complex reasoning, tool orchestration</td>
+          <td>Standard API pricing</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The local model acts as a router: it classifies message complexity and decides which tier to forward to. Simple greetings stay local. Complex planning tasks go to the heavy tier. This keeps API costs low while maintaining high quality for tasks that need it.</p>
+
+    <h2 id="security">Security model</h2>
+    <p>The security architecture has one critical boundary:</p>
+
+    <div class="callout">
+      <p><strong>Web visitors interact with a sandboxed <code>WebAgent</code> that has ZERO access to internal systems.</strong> It uses the cloud LLM for conversation only. No tools, no memory stores, no file access, no email, no calendar.</p>
+    </div>
+
+    <p>The internal <code>AgentLoop</code> &mdash; accessed via Telegram and SMS &mdash; has full tool access. These channels are authenticated (Telegram user IDs, phone number allowlists).</p>
+
+    <h3>Defense in depth</h3>
+    <ul>
+      <li><strong>Input sanitization</strong> &mdash; all web inputs are cleaned and length-limited before reaching the LLM</li>
+      <li><strong>Rate limiting</strong> &mdash; per-IP chat and form rate limits prevent abuse</li>
+      <li><strong>Session caps</strong> &mdash; web sessions expire and message counts are limited</li>
+      <li><strong>Suspicious input logging</strong> &mdash; prompt injection attempts are flagged</li>
+      <li><strong>HTTPS enforcement</strong> &mdash; Cloudflare Tunnel terminates TLS; HTTP redirects to HTTPS</li>
+      <li><strong>CSP headers</strong> &mdash; <code>script-src 'self'</code> blocks all inline scripts</li>
+      <li><strong>Blessing gate</strong> &mdash; destructive operations (deploy, Cursor tasks) require Telegram approval</li>
+    </ul>
+
+    <h2 id="memory">Memory system</h2>
+    <p>Four independent SQLite databases handle different types of persistence:</p>
+
+    <table>
+      <thead>
+        <tr><th>Store</th><th>File</th><th>What it holds</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Conversation</strong></td>
+          <td><code>conversations.db</code></td>
+          <td>Full chat history per channel. Used for context in subsequent messages.</td>
+        </tr>
+        <tr>
+          <td><strong>Structured</strong></td>
+          <td><code>memories.db</code></td>
+          <td>Extracted facts, preferences, relationships. The agent remembers what you told it.</td>
+        </tr>
+        <tr>
+          <td><strong>Plans</strong></td>
+          <td><code>plans.db</code></td>
+          <td>Multi-step plans with status tracking. "Plan a trip to Tokyo" creates actionable steps.</td>
+        </tr>
+        <tr>
+          <td><strong>Knowledge</strong></td>
+          <td><code>knowledge.db</code></td>
+          <td>Persistent key-value store for reference information. Survives conversation resets.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>All stores use async SQLite (via <code>aiosqlite</code>) and initialize lazily inside the event loop. Web visitors have their own ephemeral in-memory sessions &mdash; they never touch these databases.</p>
+
+    <h2 id="tool-dispatch">Tool dispatch</h2>
+    <p>Tools register with a central <code>ToolRegistry</code>. Each tool declares its name, description, and parameter schema. The LLM generates <code>[TOOL:name]</code> blocks in its responses, which the agent loop parses and dispatches.</p>
+
+    <p>The dispatch flow:</p>
+    <ol>
+      <li>LLM generates a response containing <code>[TOOL:calendar] create meeting tomorrow at 2pm</code></li>
+      <li>Agent loop extracts the tool call</li>
+      <li>Registry looks up the tool by name</li>
+      <li>Tool executes (API call, DB query, etc.)</li>
+      <li>Result feeds back into the next LLM turn</li>
+    </ol>
+
+    <p>Tools can be backed by MCP servers. The <code>MCPGatewayTool</code> wraps any MCP server as a standard tool, with automatic fallback to REST implementations if the MCP connection fails.</p>
+
+    <h2 id="web-presence">Web presence</h2>
+    <p>The built-in web server (Starlette ASGI) provides:</p>
+    <ul>
+      <li><strong>Landing page</strong> &mdash; configurable via <code>static/index.html</code> with persona placeholders</li>
+      <li><strong>Chat widget</strong> &mdash; SSE-based chat with the sandboxed WebAgent</li>
+      <li><strong>Intake form</strong> &mdash; collects leads, notifies you on Telegram</li>
+      <li><strong>Blog engine</strong> &mdash; zero-dependency markdown-to-HTML with frontmatter parsing</li>
+      <li><strong>Lead outreach</strong> &mdash; auto-qualifies leads via LLM and sends branded follow-up emails</li>
+    </ul>
+
+    <p>Everything runs behind Cloudflare Tunnel for TLS termination, DDoS protection, and edge caching.</p>
+
+    <h2 id="agent-loop">Agent loop</h2>
+    <p>The <code>AgentLoop</code> is the central conversation engine. For each incoming message:</p>
+    <ol>
+      <li>Load conversation history from memory</li>
+      <li>Build the message context (system prompt + history + current message)</li>
+      <li>Check goal alignment (12-Week-Year integration)</li>
+      <li>Route to appropriate inference tier</li>
+      <li>Parse and dispatch any tool calls</li>
+      <li>Extract structured memories from the conversation</li>
+      <li>Save conversation and return the response</li>
+    </ol>
+
+    <p>The loop handles tool call chains &mdash; if a tool result triggers another tool call, it continues dispatching until the LLM produces a final response.</p>
+
+    <h2 id="sovereign-engine">Sovereign engine</h2>
+    <p>The autonomous engine handles complex, multi-step tasks that go beyond a single conversation turn. Triggered via <code>/engine</code> in Telegram or <code>engine: &lt;task&gt;</code> in any channel.</p>
+
+    <p>It runs in a separate context with its own LLM session, using the heavy cloud tier. The engine can:</p>
+    <ul>
+      <li>Break tasks into steps and execute them sequentially</li>
+      <li>Use all registered tools</li>
+      <li>Access structured memory and plans for context</li>
+      <li>Report progress back through the channel</li>
+    </ul>
+
+    <p>Destructive operations go through the <code>BlessingGate</code> &mdash; a human-in-the-loop approval system that sends a Telegram message asking for confirmation before proceeding.</p>
+
+    <h2 id="mcp-gateway">MCP gateway</h2>
+    <p>The agent acts as an MCP client. MCP servers are launched on-demand (lazy initialization) and communicate over stdio. The <code>MCPGatewayTool</code> wraps each server as a standard tool:</p>
+    <ul>
+      <li>Server starts on first tool use, not at boot</li>
+      <li>Automatic reconnection on failure</li>
+      <li>Optional REST fallback tools (e.g., Jira REST if Atlassian MCP fails)</li>
+      <li>Environment variables auto-mapped from config sections</li>
+    </ul>
+
+    <h2 id="project-structure">Project structure</h2>
+    <pre><code>src/pocket_agent/
+&#x251C;&#x2500;&#x2500; __main__.py          # Entry point
+&#x251C;&#x2500;&#x2500; persona.py           # Persona config &rarr; system prompts
+&#x251C;&#x2500;&#x2500; brand.py             # HTML email template (persona-driven)
+&#x251C;&#x2500;&#x2500; config/settings.py   # Config loader (TOML &rarr; dataclasses)
+&#x251C;&#x2500;&#x2500; core/
+&#x2502;   &#x251C;&#x2500;&#x2500; loop.py          # AgentLoop &mdash; main conversation engine
+&#x2502;   &#x251C;&#x2500;&#x2500; engine.py        # Sovereign engine (autonomous tasks)
+&#x2502;   &#x251C;&#x2500;&#x2500; blessing.py      # Human-in-the-loop approval gate
+&#x2502;   &#x251C;&#x2500;&#x2500; goal_aligner.py  # 12-Week-Year goal alignment
+&#x2502;   &#x251C;&#x2500;&#x2500; monitor.py       # Proactive monitoring
+&#x2502;   &#x2514;&#x2500;&#x2500; tracing.py       # Observability (SQLite / Langfuse)
+&#x251C;&#x2500;&#x2500; inference/
+&#x2502;   &#x251C;&#x2500;&#x2500; local.py         # llama.cpp backend
+&#x2502;   &#x2514;&#x2500;&#x2500; cloud.py         # Anthropic / Google / OpenAI backends
+&#x251C;&#x2500;&#x2500; channels/
+&#x2502;   &#x251C;&#x2500;&#x2500; telegram.py      # Telegram bot
+&#x2502;   &#x251C;&#x2500;&#x2500; sms.py           # Termux SMS
+&#x2502;   &#x2514;&#x2500;&#x2500; sms_listener.py  # Dual-channel SMS listener
+&#x251C;&#x2500;&#x2500; tools/               # Calendar, email, Jira, search, deploy...
+&#x251C;&#x2500;&#x2500; memory/              # Conversation, structured, plans
+&#x251C;&#x2500;&#x2500; knowledge/           # SQLite knowledge base
+&#x251C;&#x2500;&#x2500; mcp/                 # MCP client, server, gateway
+&#x251C;&#x2500;&#x2500; voice/               # STT + TTS
+&#x251C;&#x2500;&#x2500; cursor/              # Cursor Cloud Agents bridge
+&#x2514;&#x2500;&#x2500; web/
+    &#x251C;&#x2500;&#x2500; app.py           # Starlette ASGI server
+    &#x251C;&#x2500;&#x2500; agent.py         # Sandboxed WebAgent
+    &#x251C;&#x2500;&#x2500; blog.py          # Blog engine
+    &#x251C;&#x2500;&#x2500; outreach.py      # Lead qualification + auto-email
+    &#x2514;&#x2500;&#x2500; static/          # Landing page, CSS, JS, blog posts</code></pre>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>Pocket Agent &middot; MIT License &middot; <a href="https://github.com/etnlbck/pocket-agent">GitHub</a></p>
+</footer>
+
+</body>
+</html>
