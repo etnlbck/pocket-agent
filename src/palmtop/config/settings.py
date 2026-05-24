@@ -250,6 +250,17 @@ class MatrixConfig:
     allowed_rooms: list[str] = field(default_factory=list)  # !room_id:server format
 
 
+@dataclass
+class IrcConfig:
+    server: str = ""
+    port: int = 6667
+    nick: str = "palmtop"
+    channels: list[str] = field(default_factory=list)  # IRC channels to join
+    password: str = ""  # server password (optional)
+    use_ssl: bool = False
+    allowed_users: list[str] = field(default_factory=list)  # IRC nicks
+
+
 def _default_channel() -> Channel:
     return "sms" if detect_runtime() == "phone" else "telegram"
 
@@ -268,6 +279,7 @@ class Config:
     discord: DiscordConfig = field(default_factory=DiscordConfig)
     slack: SlackConfig = field(default_factory=SlackConfig)
     matrix: MatrixConfig = field(default_factory=MatrixConfig)
+    irc: IrcConfig = field(default_factory=IrcConfig)
     sms: SmsConfig = field(default_factory=SmsConfig)
     web: WebConfig = field(default_factory=WebConfig)
     atlassian: AtlassianConfig = field(default_factory=AtlassianConfig)
@@ -355,6 +367,10 @@ class Config:
                 for k, v in raw["matrix"].items():
                     if hasattr(cfg.matrix, k):
                         setattr(cfg.matrix, k, v)
+            if "irc" in raw:
+                for k, v in raw["irc"].items():
+                    if hasattr(cfg.irc, k):
+                        setattr(cfg.irc, k, v)
             if "atlassian" in raw:
                 for k, v in raw["atlassian"].items():
                     if hasattr(cfg.atlassian, k):

@@ -614,6 +614,23 @@ def main() -> None:
                     )
                     runner.add(matrix_ch)
 
+            elif ch_name == "irc":
+                from palmtop.channels.irc import IrcChannel
+
+                if not cfg.irc.server:
+                    log.warning("IRC channel enabled but server not set — skipped")
+                else:
+                    irc_ch = IrcChannel(
+                        server=cfg.irc.server,
+                        port=cfg.irc.port,
+                        nick=cfg.irc.nick,
+                        channels=cfg.irc.channels or None,
+                        password=cfg.irc.password,
+                        use_ssl=cfg.irc.use_ssl,
+                        allowed_users=cfg.irc.allowed_users or None,
+                    )
+                    runner.add(irc_ch)
+
             else:
                 log.warning("Channel '%s' not yet implemented — skipped", ch_name)
 

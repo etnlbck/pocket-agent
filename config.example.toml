@@ -63,7 +63,7 @@ accent_dim = "#c49a20"
 # Multi-channel mode — run multiple channels simultaneously:
 # channels = ["telegram", "sms", "email"]
 #
-# Supported: "telegram", "sms", "email", "discord", "slack", "matrix".
+# Supported: "telegram", "sms", "email", "discord", "slack", "matrix", "irc".
 # All channels share the same AgentLoop (memory, tools, inference).
 # Defaults to sms on phone, telegram on dev if neither is set.
 # Telegram channel: uv sync --extra telegram  (bootstrap_termux.sh installs this)
@@ -132,6 +132,16 @@ n_threads = 4
 # access_token = ""
 # allowed_users = []             # Matrix user IDs (e.g. "@alice:matrix.org")
 # allowed_rooms = []             # Room IDs (e.g. "!abc123:matrix.org")
+
+[irc]
+# Zero extra dependencies — uses raw asyncio sockets with IRC protocol.
+# server = "irc.libera.chat"
+# port = 6697
+# nick = "palmtop"
+# channels = ["#your-channel"]
+# password = ""                  # server password (optional)
+# use_ssl = true
+# allowed_users = []             # IRC nicks (case-insensitive)
 
 [email]
 # AgentMail — gives the agent his own email inbox
