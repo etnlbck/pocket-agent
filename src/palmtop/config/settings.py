@@ -226,6 +226,14 @@ class TelegramConfig:
     allowed_users: list[int] = field(default_factory=list)
 
 
+@dataclass
+class DiscordConfig:
+    bot_token: str = ""
+    allowed_users: list[int] = field(default_factory=list)
+    guild_id: int = 0  # 0 = any guild
+    channel_id: int = 0  # 0 = any channel (DMs always allowed)
+
+
 def _default_channel() -> Channel:
     return "sms" if detect_runtime() == "phone" else "telegram"
 
@@ -241,6 +249,7 @@ class Config:
     cloud_light: CloudTierConfig = field(default_factory=CloudTierConfig)
     cloud_heavy: CloudTierConfig = field(default_factory=CloudTierConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
+    discord: DiscordConfig = field(default_factory=DiscordConfig)
     sms: SmsConfig = field(default_factory=SmsConfig)
     web: WebConfig = field(default_factory=WebConfig)
     atlassian: AtlassianConfig = field(default_factory=AtlassianConfig)
@@ -316,6 +325,10 @@ class Config:
                 for k, v in raw["telegram"].items():
                     if hasattr(cfg.telegram, k):
                         setattr(cfg.telegram, k, v)
+            if "discord" in raw:
+                for k, v in raw["discord"].items():
+                    if hasattr(cfg.discord, k):
+                        setattr(cfg.discord, k, v)
             if "atlassian" in raw:
                 for k, v in raw["atlassian"].items():
                     if hasattr(cfg.atlassian, k):
@@ -396,6 +409,10 @@ class Config:
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         if token:
             cfg.telegram.bot_token = token
+
+        discord_token = os.environ.get("DISCORD_BOT_TOKEN", "")
+        if discord_token and not cfg.discord.bot_token:
+            cfg.discord.bot_token = discord_token
 
         model = os.environ.get("MODEL_PATH")
         if model:

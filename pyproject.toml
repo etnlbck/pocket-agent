@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 telegram = ["python-telegram-bot>=22.0"]
+discord = ["discord.py>=2.3.0"]
 cloud = ["anthropic>=0.50.0"]
 atlassian = ["atlassian-python-api>=3.41.0"]
 web = ["starlette>=0.40.0", "uvicorn>=0.30.0"]
@@ -24,7 +25,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.8.0",
 ]
-all = ["palmtop[telegram,cloud,atlassian,web,observability]"]
+all = ["palmtop[telegram,discord,cloud,atlassian,web,observability]"]
 
 [project.scripts]
 palmtop = "palmtop.__main__:main"
@@ -50,6 +51,7 @@ ignore = ["E741", "N818"]
 "src/palmtop/tools/jira.py" = ["E501"]  # usage strings
 "src/palmtop/mcp/atlassian_server.py" = ["E501"]  # API descriptions
 "tests/test_telegram_html.py" = ["E402"]  # importorskip must precede import
+"tests/test_discord_channel.py" = ["E402"]  # importorskip must precede import
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -560,6 +560,24 @@ def main() -> None:
                     )
                     runner.add(email_ch)
 
+            elif ch_name == "discord":
+                try:
+                    from palmtop.channels.discord import DiscordChannel
+                except ImportError:
+                    log.error("Discord channel requires discord.py: uv sync --extra discord")
+                    raise SystemExit(1) from None
+
+                if not cfg.discord.bot_token:
+                    log.warning("Discord channel enabled but DISCORD_BOT_TOKEN not set — skipped")
+                else:
+                    discord_ch = DiscordChannel(
+                        bot_token=cfg.discord.bot_token,
+                        allowed_users=cfg.discord.allowed_users or None,
+                        guild_id=cfg.discord.guild_id or None,
+                        channel_id=cfg.discord.channel_id or None,
+                    )
+                    runner.add(discord_ch)
+
             else:
                 log.warning("Channel '%s' not yet implemented — skipped", ch_name)
 
