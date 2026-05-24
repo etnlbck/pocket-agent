@@ -49,6 +49,7 @@ ignore = ["E741", "N818"]
 "src/palmtop/tools/base.py" = ["E501"]  # docstring examples
 "src/palmtop/tools/jira.py" = ["E501"]  # usage strings
 "src/palmtop/mcp/atlassian_server.py" = ["E501"]  # API descriptions
+"tests/test_telegram_html.py" = ["E402"]  # importorskip must precede import
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

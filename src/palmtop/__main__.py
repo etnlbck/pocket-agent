@@ -509,6 +509,20 @@ def main() -> None:
                 except Exception:
                     pass
             reminders.start_background_check()
+
+            # Start health server
+            if cfg.admin.enabled:
+                from palmtop.admin.health import HealthServer, HealthState
+
+                health_state = HealthState(
+                    channels_active=cfg.active_channels,
+                    data_dir=cfg.data_dir,
+                    admin_token=cfg.admin.token,
+                )
+                health_srv = HealthServer(health_state, host=cfg.admin.host, port=cfg.admin.port)
+                asyncio.create_task(health_srv.start())
+                log.info("Health endpoint: http://%s:%d/health", cfg.admin.host, cfg.admin.port)
+
             log.info("Multi-channel runner started: %s", ", ".join(cfg.active_channels))
 
         async def _shutdown_multi():
@@ -607,6 +621,22 @@ def main() -> None:
                 except Exception:
                     pass
             reminders.start_background_check()
+
+            # Start health server (single-channel mode)
+            if cfg.admin.enabled and not cfg.web.enabled:
+                # Only start standalone health server if web channel is off
+                # (web channel already serves on :8000)
+                from palmtop.admin.health import HealthServer, HealthState
+
+                health_state = HealthState(
+                    channels_active=[cfg.channel],
+                    data_dir=cfg.data_dir,
+                    admin_token=cfg.admin.token,
+                )
+                health_srv = HealthServer(health_state, host=cfg.admin.host, port=cfg.admin.port)
+                asyncio.create_task(health_srv.start())
+                log.info("Health endpoint: http://%s:%d/health", cfg.admin.host, cfg.admin.port)
+
             if cfg.digest.enabled and cfg.telegram.allowed_users:
                 from palmtop.core.digest import DigestService
 

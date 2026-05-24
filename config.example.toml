@@ -66,6 +66,13 @@ accent_dim = "#c49a20"
 # Defaults to sms on phone, telegram on dev if neither is set.
 # Telegram channel: uv sync --extra telegram  (bootstrap_termux.sh installs this)
 
+# ── Health / Admin ───────────────────────────────────────────────────
+[admin]
+enabled = true         # /health endpoint for Docker healthcheck + uptime monitors
+# token = ""          # Set a bearer token to enable /admin/stats (empty = disabled)
+# host = "0.0.0.0"
+# port = 8000         # Shares port with web channel if both are enabled
+
 [inference]
 model_path = "models/phi-3.5-mini-instruct-q4_k_m.gguf"
 n_ctx = 4096

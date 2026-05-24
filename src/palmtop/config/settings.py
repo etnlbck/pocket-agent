@@ -211,6 +211,16 @@ class SmsConfig:
 
 
 @dataclass
+class AdminConfig:
+    """Health/admin endpoint config."""
+
+    enabled: bool = True  # /health always on for Docker healthcheck
+    token: str = ""  # bearer token for /admin/* routes (empty = admin disabled)
+    host: str = "0.0.0.0"
+    port: int = 8000
+
+
+@dataclass
 class TelegramConfig:
     bot_token: str = ""
     allowed_users: list[int] = field(default_factory=list)
@@ -225,6 +235,7 @@ class Config:
     runtime: Runtime = field(default_factory=detect_runtime)
     channel: Channel = field(default_factory=_default_channel)
     channels: list[Channel] = field(default_factory=list)  # multi-channel mode
+    admin: AdminConfig = field(default_factory=AdminConfig)
     persona: PersonaConfig = field(default_factory=PersonaConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)
     cloud_light: CloudTierConfig = field(default_factory=CloudTierConfig)
@@ -368,6 +379,10 @@ class Config:
                 for k, v in raw["monitor"].items():
                     if hasattr(cfg.monitor, k):
                         setattr(cfg.monitor, k, v)
+            if "admin" in raw:
+                for k, v in raw["admin"].items():
+                    if hasattr(cfg.admin, k):
+                        setattr(cfg.admin, k, v)
             if "channels" in raw:
                 cfg.channels = raw["channels"]
             if "channel" in raw:
