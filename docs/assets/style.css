@@ -430,12 +430,17 @@ img { max-width: 100%; height: auto; }
   display: block;
   font-size: 14px;
   color: var(--text-muted);
-  padding: 5px 0;
-  transition: color 0.15s;
+  padding: 5px 0 5px 12px;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, border-color 0.2s;
 }
 
 .docs-sidebar a:hover { color: var(--text); }
-.docs-sidebar a.active { color: var(--accent); font-weight: 500; }
+.docs-sidebar a.active {
+  color: var(--accent);
+  font-weight: 500;
+  border-left-color: var(--accent);
+}
 
 .docs-content {
   min-width: 0;
