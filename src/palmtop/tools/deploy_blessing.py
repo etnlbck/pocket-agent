@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from palmtop.core.blessing import BlessingGate
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 async def request_deploy_blessing(
-    gate: "BlessingGate | None",
+    gate: BlessingGate | None,
     send_fn: Callable[[str, str], Awaitable[None]] | None,
     user_id: str,
     *,
@@ -25,11 +26,7 @@ async def request_deploy_blessing(
         return True
 
     async def _send_approval() -> None:
-        msg = (
-            f"\U0001f512 **{platform} deploy approval needed**\n\n"
-            f"{summary}\n\n"
-            "Reply /approve or /deny"
-        )
+        msg = f"\U0001f512 **{platform} deploy approval needed**\n\n{summary}\n\nReply /approve or /deny"
         await send_fn(user_id, msg)
 
     await _send_approval()

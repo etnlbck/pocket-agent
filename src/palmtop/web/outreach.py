@@ -13,10 +13,9 @@ WebAgent.  The LLM is used for content generation only — no tool dispatch.
 
 from __future__ import annotations
 
-import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Callable, Awaitable
 
 from palmtop.brand import build_email_html
 from palmtop.inference.base import InferenceBackend, Message
@@ -87,6 +86,7 @@ Use plain paragraph breaks between paragraphs (no bullet points).\
 @dataclass
 class LeadInfo:
     """Data from the intake form submission."""
+
     name: str
     email: str
     project: str
@@ -137,7 +137,8 @@ class LeadOutreach:
         if not qualified:
             log.info(
                 "Lead %s <%s> not qualified — skipping outreach",
-                lead.name, lead.email,
+                lead.name,
+                lead.email,
             )
             await self._notify(
                 f"ℹ️ Lead from {lead.name} <{lead.email}> was not "
@@ -175,7 +176,9 @@ class LeadOutreach:
 
         log.info(
             "Outreach sent to %s <%s> (msg: %s)",
-            lead.name, lead.email, msg_id,
+            lead.name,
+            lead.email,
+            msg_id,
         )
 
         # Step 5: Notify about the auto-outreach

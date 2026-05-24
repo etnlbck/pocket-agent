@@ -6,10 +6,11 @@ import asyncio
 import json
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Awaitable, Callable
+from typing import TYPE_CHECKING
 
 from palmtop.core.blessing import assess_risk, build_approval_summary
 from palmtop.cursor.client import TERMINAL_RUN_STATUSES, CursorAgentsClient, CursorAPIError
@@ -40,7 +41,7 @@ _REPO_RE = re.compile(r"^repo=(\S+)(?:\s+branch=(\S+))?\s+", re.I)
 _BRANCH_RE = re.compile(r"^branch=(\S+)\s+", re.I)
 
 
-def parse_cursor_query(query: str, cfg: "CursorConfig") -> tuple[str, str, str]:
+def parse_cursor_query(query: str, cfg: CursorConfig) -> tuple[str, str, str]:
     """Parse tool/command query into (repo_url, branch, prompt)."""
     q = query.strip()
     repo = cfg.default_repo
@@ -161,10 +162,10 @@ class CursorJobManager:
     def __init__(
         self,
         client: CursorAgentsClient,
-        cfg: "CursorConfig",
+        cfg: CursorConfig,
         data_dir: Path,
         *,
-        blessing_gate: "BlessingGate | None" = None,
+        blessing_gate: BlessingGate | None = None,
         send_fn: Callable[[str, str], Awaitable[None]] | None = None,
     ) -> None:
         self._client = client
@@ -305,11 +306,7 @@ class CursorJobManager:
         # asyncio.to_thread had started the blocking wait.
         gate.prepare(summary)
 
-        msg = (
-            "\U0001f512 **Cursor approval needed**\n\n"
-            f"{summary}\n\n"
-            "Reply /approve or /deny"
-        )
+        msg = f"\U0001f512 **Cursor approval needed**\n\n{summary}\n\nReply /approve or /deny"
         await send_fn(user_id, msg)
 
         # Now block in a worker thread — the gate is already armed.

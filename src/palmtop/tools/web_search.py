@@ -57,7 +57,9 @@ class WebSearchTool(Tool):
 
         log.info(
             "Search chain: %s (brave keys: %d, serper keys: %d)",
-            " → ".join(self._chain), len(self._brave_keys), len(self._serper_keys),
+            " → ".join(self._chain),
+            len(self._brave_keys),
+            len(self._serper_keys),
         )
 
     def _get_client(self) -> httpx.AsyncClient:
@@ -220,6 +222,7 @@ def _is_good_result(text: str) -> bool:
 
 
 # ── DDG HTML parsing ─────────────────────────────────────────────
+
 
 def _parse_ddg_html(html: str) -> str:
     results = []

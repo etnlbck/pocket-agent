@@ -52,7 +52,11 @@ TOOLS = [
                 "title": {"type": "string", "description": "Entry title"},
                 "content": {"type": "string", "description": "Entry content"},
                 "tags": {"type": "string", "description": "Comma-separated tags", "default": ""},
-                "source": {"type": "string", "description": "Source URL or reference", "default": ""},
+                "source": {
+                    "type": "string",
+                    "description": "Source URL or reference",
+                    "default": "",
+                },
             },
             "required": ["title", "content"],
         },
@@ -122,11 +126,14 @@ class MCPServer:
         params = request.get("params", {})
 
         if method == "initialize":
-            return _jsonrpc_response(rid, {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {"tools": {}},
-                "serverInfo": SERVER_INFO,
-            })
+            return _jsonrpc_response(
+                rid,
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}},
+                    "serverInfo": SERVER_INFO,
+                },
+            )
 
         elif method == "notifications/initialized":
             return None
@@ -139,14 +146,20 @@ class MCPServer:
             args = params.get("arguments", {})
             try:
                 result = await self._call_tool(tool_name, args)
-                return _jsonrpc_response(rid, {
-                    "content": [{"type": "text", "text": result}],
-                })
+                return _jsonrpc_response(
+                    rid,
+                    {
+                        "content": [{"type": "text", "text": result}],
+                    },
+                )
             except Exception as e:
-                return _jsonrpc_response(rid, {
-                    "content": [{"type": "text", "text": f"Error: {e}"}],
-                    "isError": True,
-                })
+                return _jsonrpc_response(
+                    rid,
+                    {
+                        "content": [{"type": "text", "text": f"Error: {e}"}],
+                        "isError": True,
+                    },
+                )
 
         elif method == "ping":
             return _jsonrpc_response(rid, {})
@@ -163,8 +176,10 @@ class MCPServer:
 
         elif name == "kb_add":
             eid = await self._kb.add(
-                args["title"], args["content"],
-                args.get("tags", ""), args.get("source", ""),
+                args["title"],
+                args["content"],
+                args.get("tags", ""),
+                args.get("source", ""),
             )
             return f"Added entry #{eid}: {args['title']}"
 

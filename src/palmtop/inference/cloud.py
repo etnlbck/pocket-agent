@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import httpx
 
@@ -57,9 +57,7 @@ class AnthropicBackend:
 
         return resp.json()["content"][0]["text"]
 
-    async def stream_complete(
-        self, messages: list[Message], max_tokens: int = 1024
-    ) -> AsyncIterator[str]:
+    async def stream_complete(self, messages: list[Message], max_tokens: int = 1024) -> AsyncIterator[str]:
         """Yield text chunks via Anthropic SSE streaming."""
         system = None
         api_messages = []
@@ -121,9 +119,7 @@ class GeminiBackend:
         self._model = model
         self._client = httpx.AsyncClient(timeout=60.0, limits=_PHONE_LIMITS)
 
-    def _build_gemini_request(
-        self, messages: list[Message], max_tokens: int
-    ) -> tuple[list, dict, str | None]:
+    def _build_gemini_request(self, messages: list[Message], max_tokens: int) -> tuple[list, dict, str | None]:
         """Parse messages into Gemini format. Returns (contents, gen_config, system)."""
         system = None
         contents = []
@@ -170,9 +166,7 @@ class GeminiBackend:
 
         return self._extract_gemini_text(resp.json())
 
-    async def stream_complete(
-        self, messages: list[Message], max_tokens: int = 1024
-    ) -> AsyncIterator[str]:
+    async def stream_complete(self, messages: list[Message], max_tokens: int = 1024) -> AsyncIterator[str]:
         """Yield text chunks via Gemini SSE streaming."""
         contents, gen_config, system = self._build_gemini_request(messages, max_tokens)
 

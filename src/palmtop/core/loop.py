@@ -3,28 +3,38 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncIterator
 from zoneinfo import ZoneInfo
 
+from palmtop.core.evaluator import check_capability_claims, check_date_claims, evaluate_response
+from palmtop.core.goal_aligner import GoalAligner
+from palmtop.core.router import route_fast
+from palmtop.core.sovereign_runner import parse_engine_task, run_sovereign_engine
+from palmtop.core.tracing import Tracer
+from palmtop.cursor.runner import parse_cursor_task
 from palmtop.inference.base import InferenceBackend, Message
 from palmtop.memory.conversation import ConversationMemory
-from palmtop.memory.structured import StructuredMemory, EXTRACT_PROMPT, parse_extraction
 from palmtop.memory.plans import (
-    PlanMemory, PLAN_INSTRUCTIONS, format_plans_for_context, extract_plans_from_reply,
+    PLAN_INSTRUCTIONS,
+    PlanMemory,
+    extract_plans_from_reply,
+    format_plans_for_context,
 )
+from palmtop.memory.structured import EXTRACT_PROMPT, StructuredMemory, parse_extraction
 from palmtop.tools.base import (
-    ToolRegistry, ToolResult, extract_tool_calls, extract_action_chains,
-    detect_tool_hints, classify_result, build_retry_query, ERROR_GUIDANCE,
-    resolve_tool_name, get_default_fallbacks,
+    ERROR_GUIDANCE,
+    ToolRegistry,
+    ToolResult,
+    build_retry_query,
+    classify_result,
+    detect_tool_hints,
+    extract_action_chains,
+    extract_tool_calls,
+    get_default_fallbacks,
+    resolve_tool_name,
 )
-from palmtop.core.evaluator import evaluate_response, check_date_claims, check_capability_claims
-from palmtop.core.goal_aligner import GoalAligner
-from palmtop.core.sovereign_runner import parse_engine_task, run_sovereign_engine
-from palmtop.cursor.runner import parse_cursor_task
-from palmtop.core.router import route_fast
-from palmtop.core.tracing import Tracer, NullTurnTrace
 
 log = logging.getLogger(__name__)
 
@@ -35,14 +45,17 @@ CURSOR_TOOL_TIMEOUT = 330.0  # blessing gate can block up to 5 minutes
 def _safe_ensure_future(coro, *, label: str = "background") -> asyncio.Task:
     """Schedule a coroutine and log any exception instead of dropping it."""
     task = asyncio.ensure_future(coro)
+
     def _done(t: asyncio.Task) -> None:
         if t.cancelled():
             return
         exc = t.exception()
         if exc:
             log.warning("Background task '%s' failed: %s", label, exc)
+
     task.add_done_callback(_done)
     return task
+
 
 class AgentLoop:
     def __init__(
@@ -199,17 +212,13 @@ class AgentLoop:
             return ""
         return "\n".join(f"[{m.category}] {m.content}" for m in recent)
 
-    async def _extract_and_store(
-        self, user_id: str, user_text: str, reply: str
-    ) -> None:
+    async def _extract_and_store(self, user_id: str, user_text: str, reply: str) -> None:
         if not self._structured:
             return
         extractor = self._pick_extractor()
         prompt = EXTRACT_PROMPT.format(user_msg=user_text, assistant_msg=reply)
         try:
-            raw = await extractor.complete(
-                [Message(role="user", content=prompt)], max_tokens=256
-            )
+            raw = await extractor.complete([Message(role="user", content=prompt)], max_tokens=256)
             parsed = parse_extraction(raw)
             for category, content in parsed:
                 await self._structured.store(user_id, category, content)
@@ -235,14 +244,15 @@ class AgentLoop:
 
     async def _execute_tool(self, tool_name: str, query: str) -> ToolResult:
         """Execute a single tool call with classification and auto-retry."""
-        resolved = (
-            resolve_tool_name(self._tools, tool_name) if self._tools else None
-        )
+        resolved = resolve_tool_name(self._tools, tool_name) if self._tools else None
         tool = self._tools.get(resolved) if resolved and self._tools else None
         if not tool:
             return ToolResult(
-                tool=tool_name, query=query, result="Unknown tool.",
-                success=False, error_kind="not_found",
+                tool=tool_name,
+                query=query,
+                result="Unknown tool.",
+                success=False,
+                error_kind="not_found",
             )
 
         log.info("Running tool: %s(%s)", resolved, query[:80])
@@ -251,12 +261,14 @@ class AgentLoop:
         timeout = CURSOR_TOOL_TIMEOUT if resolved == "cursor" else TOOL_TIMEOUT
         try:
             raw = await asyncio.wait_for(tool.run(query), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("Tool %s timed out after %.0fs", resolved, TOOL_TIMEOUT)
             return ToolResult(
-                tool=tool_name, query=query,
+                tool=tool_name,
+                query=query,
                 result=f"Tool timed out after {TOOL_TIMEOUT:.0f}s.",
-                success=False, error_kind="timeout",
+                success=False,
+                error_kind="timeout",
             )
         result = classify_result(tool_name, query, raw)
 
@@ -268,13 +280,14 @@ class AgentLoop:
                     await asyncio.sleep(0.5)
                 log.info(
                     "Retrying %s (%s → %s): %s",
-                    tool_name, result.error_kind, result.retry_hint, retry_q[:80],
+                    tool_name,
+                    result.error_kind,
+                    result.retry_hint,
+                    retry_q[:80],
                 )
                 try:
-                    raw2 = await asyncio.wait_for(
-                        tool.run(retry_q), timeout=TOOL_TIMEOUT
-                    )
-                except asyncio.TimeoutError:
+                    raw2 = await asyncio.wait_for(tool.run(retry_q), timeout=TOOL_TIMEOUT)
+                except TimeoutError:
                     result.result += f"\n(Retry also timed out after {TOOL_TIMEOUT:.0f}s)"
                     return result
                 retry = classify_result(tool_name, retry_q, raw2)
@@ -301,20 +314,24 @@ class AgentLoop:
             # Auto-pivot: if the tool failed and there's no explicit
             # ON_FAIL chain, try default cross-tool fallbacks.
             if not result.success and result.error_kind in (
-                "auth", "not_configured", "connection", "server", "timeout",
+                "auth",
+                "not_configured",
+                "connection",
+                "server",
+                "timeout",
             ):
                 fallbacks = get_default_fallbacks(name, q)
                 # Only try fallbacks for tools that are actually registered
-                fallbacks = [
-                    fb for fb in fallbacks
-                    if resolve_tool_name(self._tools, fb.tool)
-                ]
+                fallbacks = [fb for fb in fallbacks if resolve_tool_name(self._tools, fb.tool)]
                 if fallbacks:
                     primary_error = f"{name}: {result.result[:150]}"
                     for fb in fallbacks:
                         log.info(
                             "Auto-pivot: %s failed (%s) → trying %s(%s)",
-                            name, result.error_kind, fb.tool, fb.query[:60],
+                            name,
+                            result.error_kind,
+                            fb.tool,
+                            fb.query[:60],
                         )
                         fb_result = await self._execute_tool(fb.tool, fb.query)
                         if fb_result.success:
@@ -347,7 +364,9 @@ class AgentLoop:
                 for fb in chain.fallbacks:
                     log.info(
                         "Action fallback: %s → %s(%s)",
-                        chain.primary.tool, fb.tool, fb.query[:60],
+                        chain.primary.tool,
+                        fb.tool,
+                        fb.query[:60],
                     )
                     fb_result = await self._execute_tool(fb.tool, fb.query)
                     if fb_result.success:
@@ -384,12 +403,22 @@ class AgentLoop:
                     if retry_q:
                         if result.retry_hint == "retry":
                             await asyncio.sleep(0.5)
-                        log.info("Auto-tool %s retry (%s): %s", tool_name, result.error_kind, retry_q[:80])
+                        log.info(
+                            "Auto-tool %s retry (%s): %s",
+                            tool_name,
+                            result.error_kind,
+                            retry_q[:80],
+                        )
                         raw2 = await tool.run(retry_q)
                         retry = classify_result(tool_name, retry_q, raw2)
                         if retry.success:
                             return f"[{label}]\n{retry.result}"
-                    log.warning("Auto-tool %s failed (%s): %s", tool_name, result.error_kind, result.result[:100])
+                    log.warning(
+                        "Auto-tool %s failed (%s): %s",
+                        tool_name,
+                        result.error_kind,
+                        result.result[:100],
+                    )
                     return None
 
                 return f"[{label}]\n{result.result}" if result.success else None
@@ -426,9 +455,7 @@ class AgentLoop:
             elif tool_name == "files":
                 tasks.append(_run_one("files", "Documents", "list"))
             elif tool_name == "12wy-reports":
-                tasks.append(
-                    _run_one("12wy-reports", "12WY coaching", "coaching brief")
-                )
+                tasks.append(_run_one("12wy-reports", "12WY coaching", "coaching brief"))
 
         if not tasks:
             return ""
@@ -460,8 +487,7 @@ class AgentLoop:
         if memory_context:
             system += (
                 "\n\nYou have the following memories about this user. "
-                "Use them naturally — don't list them back unless asked.\n"
-                + memory_context
+                "Use them naturally — don't list them back unless asked.\n" + memory_context
             )
         if plans_context:
             system += "\n\n" + plans_context
@@ -478,9 +504,7 @@ class AgentLoop:
         with self._tracer.trace_turn(user_id, user_text) as trace:
             return await self._handle_traced(user_text, user_id, trace)
 
-    async def handle_stream(
-        self, user_text: str, user_id: str = "default"
-    ) -> AsyncIterator[tuple[str, str]]:
+    async def handle_stream(self, user_text: str, user_id: str = "default") -> AsyncIterator[tuple[str, str]]:
         """Yield (event, data) tuples for streaming UX.
 
         Events:
@@ -589,15 +613,15 @@ class AgentLoop:
         messages.extend(history)
 
         if self._memory:
-            _safe_ensure_future(
-                self._memory.append(user_id, "user", user_text), label="save-user-msg"
-            )
+            _safe_ensure_future(self._memory.append(user_id, "user", user_text), label="save-user-msg")
 
         if auto_context:
-            messages.append(Message(
-                role="user",
-                content=f"{user_text}\n\n---\nHere is relevant data from your tools:\n{auto_context}",
-            ))
+            messages.append(
+                Message(
+                    role="user",
+                    content=f"{user_text}\n\n---\nHere is relevant data from your tools:\n{auto_context}",
+                )
+            )
         else:
             messages.append(Message(role="user", content=user_text))
 
@@ -611,11 +635,7 @@ class AgentLoop:
             )
 
             # Tool + action execution loop — max 5 rounds; follow-up uses cloud when available
-            follow_backend = (
-                backend
-                if backend is not self._local
-                else (self._light or self._heavy or backend)
-            )
+            follow_backend = backend if backend is not self._local else (self._light or self._heavy or backend)
             seen_keys: set[frozenset] = set()
             for _ in range(5):
                 tool_results = await self._run_tool_calls(reply)
@@ -637,22 +657,27 @@ class AgentLoop:
 
                 for r in all_results:
                     trace.record_tool_call(
-                        r.tool, r.query, r.result,
-                        error_kind=r.error_kind, success=r.success,
+                        r.tool,
+                        r.query,
+                        r.result,
+                        error_kind=r.error_kind,
+                        success=r.success,
                         retried=r.retried,
                     )
 
                 formatted = _format_tool_results(all_results)
                 messages.append(Message(role="assistant", content=reply))
-                messages.append(Message(
-                    role="user",
-                    content=(
-                        "Tool results:\n"
-                        f"{formatted}\n\n"
-                        "Respond using ONLY the tool results above. "
-                        "Do not say you are fetching or about to check — the data is already here."
-                    ),
-                ))
+                messages.append(
+                    Message(
+                        role="user",
+                        content=(
+                            "Tool results:\n"
+                            f"{formatted}\n\n"
+                            "Respond using ONLY the tool results above. "
+                            "Do not say you are fetching or about to check — the data is already here."
+                        ),
+                    )
+                )
                 reply = await follow_backend.complete(messages)
                 trace.record_generation(
                     model=getattr(follow_backend, "_model", type(follow_backend).__name__),
@@ -676,9 +701,7 @@ class AgentLoop:
 
         # --- Phase 3: Post-processing (fire-and-forget) ---
         if self._memory:
-            _safe_ensure_future(
-                self._memory.append(user_id, "assistant", reply), label="save-reply"
-            )
+            _safe_ensure_future(self._memory.append(user_id, "assistant", reply), label="save-reply")
         _safe_ensure_future(self._post_process(user_id, user_text, reply), label="post-process")
 
         return reply
@@ -725,7 +748,8 @@ class AgentLoop:
 
         try:
             summary = await summarizer.complete(
-                [Message(role="user", content=prompt)], max_tokens=300,
+                [Message(role="user", content=prompt)],
+                max_tokens=300,
             )
             summary = summary.strip()
             if summary and summary.upper() != "NONE":
@@ -733,9 +757,7 @@ class AgentLoop:
         except Exception:
             log.debug("Conversation summarization failed (non-fatal)", exc_info=True)
 
-    async def _handle_traced_stream(
-        self, user_text: str, user_id: str, trace
-    ) -> AsyncIterator[tuple[str, str]]:
+    async def _handle_traced_stream(self, user_text: str, user_id: str, trace) -> AsyncIterator[tuple[str, str]]:
         """Streaming variant of _handle_traced — yields (event, data) tuples."""
         alignment = self._check_goal_alignment(user_text)
 
@@ -762,9 +784,7 @@ class AgentLoop:
             tasks["tools"] = asyncio.ensure_future(self._auto_run_tools(user_text))
         if self._memory:
             limit = 6 if backend is self._local else 20
-            tasks["history"] = asyncio.ensure_future(
-                self._memory.get_history(user_id, limit=limit)
-            )
+            tasks["history"] = asyncio.ensure_future(self._memory.get_history(user_id, limit=limit))
 
         results = {}
         for key, task in tasks.items():
@@ -795,15 +815,15 @@ class AgentLoop:
         messages.extend(history)
 
         if self._memory:
-            _safe_ensure_future(
-                self._memory.append(user_id, "user", user_text), label="save-user-msg"
-            )
+            _safe_ensure_future(self._memory.append(user_id, "user", user_text), label="save-user-msg")
 
         if auto_context:
-            messages.append(Message(
-                role="user",
-                content=f"{user_text}\n\n---\nHere is relevant data from your tools:\n{auto_context}",
-            ))
+            messages.append(
+                Message(
+                    role="user",
+                    content=f"{user_text}\n\n---\nHere is relevant data from your tools:\n{auto_context}",
+                )
+            )
         else:
             messages.append(Message(role="user", content=user_text))
 
@@ -823,17 +843,12 @@ class AgentLoop:
 
             trace.record_generation(
                 model=getattr(backend, "_model", type(backend).__name__),
-                input_messages=[
-                    {"role": m.role, "content": m.content[:500]} for m in messages[-3:]
-                ],
+                input_messages=[{"role": m.role, "content": m.content[:500]} for m in messages[-3:]],
                 output=reply,
             )
 
             # --- Tool call follow-up (non-streaming, sends status) ---
-            follow_backend = (
-                backend if backend is not self._local
-                else (self._light or self._heavy or backend)
-            )
+            follow_backend = backend if backend is not self._local else (self._light or self._heavy or backend)
             seen_keys: set[frozenset] = set()
             for _ in range(5):
                 tool_results = await self._run_tool_calls(reply)
@@ -854,22 +869,27 @@ class AgentLoop:
 
                 for r in all_results:
                     trace.record_tool_call(
-                        r.tool, r.query, r.result,
-                        error_kind=r.error_kind, success=r.success,
+                        r.tool,
+                        r.query,
+                        r.result,
+                        error_kind=r.error_kind,
+                        success=r.success,
                         retried=r.retried,
                     )
 
                 formatted = _format_tool_results(all_results)
                 messages.append(Message(role="assistant", content=reply))
-                messages.append(Message(
-                    role="user",
-                    content=(
-                        "Tool results:\n"
-                        f"{formatted}\n\n"
-                        "Respond using ONLY the tool results above. "
-                        "Do not say you are fetching or about to check — the data is already here."
-                    ),
-                ))
+                messages.append(
+                    Message(
+                        role="user",
+                        content=(
+                            "Tool results:\n"
+                            f"{formatted}\n\n"
+                            "Respond using ONLY the tool results above. "
+                            "Do not say you are fetching or about to check — the data is already here."
+                        ),
+                    )
+                )
 
                 # Stream follow-up response too if possible
                 has_follow_stream = hasattr(follow_backend, "stream_complete")
@@ -904,9 +924,7 @@ class AgentLoop:
         trace.record_reply(reply)
 
         if self._memory:
-            _safe_ensure_future(
-                self._memory.append(user_id, "assistant", reply), label="save-reply"
-            )
+            _safe_ensure_future(self._memory.append(user_id, "assistant", reply), label="save-reply")
         _safe_ensure_future(self._post_process(user_id, user_text, reply), label="post-process")
 
         yield ("done", reply)
@@ -923,8 +941,7 @@ def _format_tool_results(results: list[ToolResult]) -> str:
         if r.success:
             if r.retried:
                 parts.append(
-                    f"[{r.tool}] (First attempt failed: {r.original_error}. "
-                    f"Retried successfully.)\n{r.result}"
+                    f"[{r.tool}] (First attempt failed: {r.original_error}. Retried successfully.)\n{r.result}"
                 )
             else:
                 parts.append(f"[{r.tool}] {r.result}")

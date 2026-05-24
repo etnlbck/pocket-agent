@@ -14,6 +14,7 @@ Usage in config.toml:
     command = ["python", "-m", "palmtop.mcp.atlassian_server"]
     description = "Jira and Confluence"
 """
+
 from __future__ import annotations
 
 import json
@@ -64,7 +65,8 @@ class MCPGatewayTool(Tool):
             self._tools_meta = self._client._tools_meta
             log.info(
                 "MCP gateway '%s' connected — %d tools available",
-                self.name, len(self._tools_meta),
+                self.name,
+                len(self._tools_meta),
             )
         return self._client
 
@@ -105,15 +107,33 @@ class MCPGatewayTool(Tool):
                 break
         if not target_tool:
             for tool in self._fallback_tools:
-                if tool.name == "jira" and any(kw in q for kw in [
-                    "issue", "ticket", "sprint", "jira", "my issues",
-                    "assigned", "backlog", "board", "project", "create",
-                ]):
+                if tool.name == "jira" and any(
+                    kw in q
+                    for kw in [
+                        "issue",
+                        "ticket",
+                        "sprint",
+                        "jira",
+                        "my issues",
+                        "assigned",
+                        "backlog",
+                        "board",
+                        "project",
+                        "create",
+                    ]
+                ):
                     target_tool = tool
                     break
-                if tool.name == "confluence" and any(kw in q for kw in [
-                    "page", "wiki", "confluence", "doc", "space",
-                ]):
+                if tool.name == "confluence" and any(
+                    kw in q
+                    for kw in [
+                        "page",
+                        "wiki",
+                        "confluence",
+                        "doc",
+                        "space",
+                    ]
+                ):
                     target_tool = tool
                     break
         if not target_tool:
@@ -138,7 +158,7 @@ class MCPGatewayTool(Tool):
         # e.g. "jira create PROJ | Summary" → "create PROJ | Summary"
         for name in (tool_name, "jira", "confluence", "atlassian"):
             if q.startswith(name + " "):
-                text = text[len(name):].strip()
+                text = text[len(name) :].strip()
                 q = text.lower()
                 break
 
@@ -147,39 +167,64 @@ class MCPGatewayTool(Tool):
             rest = text[6:].strip()  # after "create"
             for prefix in (
                 # Jira noise
-                "a jira issue in ", "a jira ticket in ", "jira issue in ",
-                "jira ticket in ", "an issue in ", "a ticket in ",
-                "a task in ", "issue in ", "ticket in ", "task in ",
-                "a jira issue ", "a jira ticket ", "jira issue ",
-                "issue ", "ticket ", "task ",
+                "a jira issue in ",
+                "a jira ticket in ",
+                "jira issue in ",
+                "jira ticket in ",
+                "an issue in ",
+                "a ticket in ",
+                "a task in ",
+                "issue in ",
+                "ticket in ",
+                "task in ",
+                "a jira issue ",
+                "a jira ticket ",
+                "jira issue ",
+                "issue ",
+                "ticket ",
+                "task ",
                 # Confluence noise
-                "a confluence page in space ", "confluence page in space ",
-                "a wiki page in space ", "wiki page in space ",
-                "a confluence page in ", "confluence page in ",
-                "a wiki page in ", "wiki page in ",
-                "a page in space ", "page in space ",
-                "a page in ", "page in ",
-                "a confluence page ", "confluence page ",
-                "a wiki page ", "wiki page ",
-                "a page ", "page ",
+                "a confluence page in space ",
+                "confluence page in space ",
+                "a wiki page in space ",
+                "wiki page in space ",
+                "a confluence page in ",
+                "confluence page in ",
+                "a wiki page in ",
+                "wiki page in ",
+                "a page in space ",
+                "page in space ",
+                "a page in ",
+                "page in ",
+                "a confluence page ",
+                "confluence page ",
+                "a wiki page ",
+                "wiki page ",
+                "a page ",
+                "page ",
                 # Generic
-                "a ", "an ",
+                "a ",
+                "an ",
             ):
                 if rest.lower().startswith(prefix):
-                    rest = rest[len(prefix):].strip()
+                    rest = rest[len(prefix) :].strip()
                     break
             return f"create {rest}"
 
         # For get/show/read commands, strip noise
         if any(q.startswith(v) for v in ("get ", "show ", "read ")):
             verb = text.split()[0]
-            rest = text[len(verb):].strip()
+            rest = text[len(verb) :].strip()
             for prefix in (
-                "confluence page ", "wiki page ", "page ",
-                "jira issue ", "issue ", "ticket ",
+                "confluence page ",
+                "wiki page ",
+                "page ",
+                "jira issue ",
+                "issue ",
+                "ticket ",
             ):
                 if rest.lower().startswith(prefix):
-                    rest = rest[len(prefix):].strip()
+                    rest = rest[len(prefix) :].strip()
                     break
             return f"get {rest}"
 
@@ -247,8 +292,8 @@ class MCPGatewayTool(Tool):
         return (
             f"I have these {self.name} tools but couldn't determine which one to use:\n"
             + "\n".join(f"  - {n}" for n in tool_names)
-            + f"\n\nTry being more specific or use JSON: "
-            f'{{"tool": "toolName", "args": {{...}}}}'
+            + "\n\nTry being more specific or use JSON: "
+            '{"tool": "toolName", "args": {...}}'
         )
 
     def _route_query(self, query: str) -> tuple[str | None, dict]:
@@ -259,11 +304,10 @@ class MCPGatewayTool(Tool):
         stealing confluence queries just because it appears first in the tool list.
         """
         import re
+
         q = query.lower()
         is_atlassian = "jira" in self.name.lower() or "atlassian" in self.name.lower()
-        is_twelvewy = any(
-            n in self.name.lower() for n in ("12wy", "twelvewy")
-        )
+        is_twelvewy = any(n in self.name.lower() for n in ("12wy", "twelvewy"))
 
         # Helper to find a tool by name substring
         def _find_tool(substr: str) -> tuple[str, dict] | None:
@@ -275,10 +319,19 @@ class MCPGatewayTool(Tool):
         # --- Pass 1: Keyword-specific routing (checks query intent first) ---
 
         if is_twelvewy:
-            if any(kw in q for kw in [
-                "coaching brief", "coach", "check-in", "check in", "morning",
-                "onboarding", "setup status", "next action",
-            ]):
+            if any(
+                kw in q
+                for kw in [
+                    "coaching brief",
+                    "coach",
+                    "check-in",
+                    "check in",
+                    "morning",
+                    "onboarding",
+                    "setup status",
+                    "next action",
+                ]
+            ):
                 t = _find_tool("coaching_brief") or _find_tool("get_coaching")
                 if t:
                     return t[0], {}
@@ -357,8 +410,18 @@ class MCPGatewayTool(Tool):
                 t = _find_tool("confluence_search") or _find_tool("cql")
                 if t:
                     search_text = q
-                    for strip in ["search", "confluence", "wiki", "for", "find", "page",
-                                  "access", "can you", "now", "?"]:
+                    for strip in [
+                        "search",
+                        "confluence",
+                        "wiki",
+                        "for",
+                        "find",
+                        "page",
+                        "access",
+                        "can you",
+                        "now",
+                        "?",
+                    ]:
                         search_text = search_text.replace(strip, "")
                     search_text = search_text.strip()
                     if search_text:
@@ -381,7 +444,9 @@ class MCPGatewayTool(Tool):
                     args = self._parse_confluence_create(query)
                     return t[0], args
 
-            if any(kw in q for kw in ["update", "edit", "change", "modify", "replace"]) and any(kw in q for kw in ["page", "doc", "content"]):
+            if any(kw in q for kw in ["update", "edit", "change", "modify", "replace"]) and any(
+                kw in q for kw in ["page", "doc", "content"]
+            ):
                 t = _find_tool("confluence_update")
                 if t:
                     args = self._parse_confluence_update(query)
@@ -453,20 +518,27 @@ class MCPGatewayTool(Tool):
         text = query.strip()
         # Strip leading action words
         for prefix in (
-            "create issue in ", "create a ticket in ", "create ticket in ",
-            "create an issue in ", "create a task in ", "create task in ",
-            "create issue ", "create ticket ", "create task ",
-            "create a jira issue in ", "create jira issue ",
+            "create issue in ",
+            "create a ticket in ",
+            "create ticket in ",
+            "create an issue in ",
+            "create a task in ",
+            "create task in ",
+            "create issue ",
+            "create ticket ",
+            "create task ",
+            "create a jira issue in ",
+            "create jira issue ",
             "create ",
         ):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
 
         # ── Format 1: kwargs-style ──
         # LLM sometimes emits: project="PROJ", summary="Fix the bug", ...
         # or: PROJ, summary="Fix the bug", issuetype="Task", ...
-        if 'summary=' in text or 'summary =' in text:
+        if "summary=" in text or "summary =" in text:
             args = self._parse_kwargs(text)
             if args.get("summary"):
                 return args
@@ -491,12 +563,12 @@ class MCPGatewayTool(Tool):
             key_match = re.search(r"\b([A-Z][A-Z0-9]{1,9})\b", text)
             project = key_match.group(1) if key_match else ""
             if key_match:
-                remainder = text[key_match.end():].strip()
+                remainder = text[key_match.end() :].strip()
                 for strip in ("with summary ", "titled ", "title ", "summary "):
                     if remainder.lower().startswith(strip):
-                        remainder = remainder[len(strip):].strip()
+                        remainder = remainder[len(strip) :].strip()
                         break
-                summary = remainder.strip('"\'')
+                summary = remainder.strip("\"'")
             else:
                 summary = text
             issuetype = ""
@@ -535,7 +607,7 @@ class MCPGatewayTool(Tool):
         # If no project= kwarg, look for a bare project key at the start
         if "project" not in args:
             # e.g. "JB, summary=..." — grab the leading word before the first comma
-            lead = text.split(",")[0].strip().strip('"\'')
+            lead = text.split(",")[0].strip().strip("\"'")
             key_match = re.match(r"^([A-Z][A-Z0-9]{1,9})\b", lead)
             if key_match:
                 args["project"] = key_match.group(1)
@@ -549,11 +621,12 @@ class MCPGatewayTool(Tool):
     def _extract_project_key(text: str) -> str:
         """Pull a Jira project key out of text like 'project PROJ' or just 'PROJ'."""
         import re
+
         text = text.strip()
         # Strip noise words
         for prefix in ("project ", "in project ", "in "):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
         # Find the uppercase key
         match = re.search(r"\b([A-Z][A-Z0-9]{1,9})\b", text)
@@ -569,16 +642,23 @@ class MCPGatewayTool(Tool):
           - "read page #98765"
         """
         import re
+
         text = query.strip()
         # Strip action + noise
         for prefix in (
-            "get confluence page ", "show confluence page ",
-            "read confluence page ", "get wiki page ",
-            "get page ", "show page ", "read page ",
-            "get ", "show ", "read ",
+            "get confluence page ",
+            "show confluence page ",
+            "read confluence page ",
+            "get wiki page ",
+            "get page ",
+            "show page ",
+            "read page ",
+            "get ",
+            "show ",
+            "read ",
         ):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
 
         text = text.lstrip("#")
@@ -588,14 +668,14 @@ class MCPGatewayTool(Tool):
         space_match = re.search(r"\bin\s+space\s+([A-Z][A-Z0-9]{0,9})\b", text, re.IGNORECASE)
         if space_match:
             args["space"] = space_match.group(1).upper()
-            text = text[:space_match.start()].strip()
+            text = text[: space_match.start()].strip()
 
         # If it's a numeric page ID, use it directly
         if text.isdigit():
             args["pageId"] = text
         else:
             # Treat as page title
-            args["pageId"] = text.strip('"\'')
+            args["pageId"] = text.strip("\"'")
 
         return args
 
@@ -609,30 +689,50 @@ class MCPGatewayTool(Tool):
           - "new wiki page in JB | Sprint Retro | <h1>Retro</h1><p>Notes</p>"
         """
         import re
+
         text = query.strip()
         # Strip action prefixes
         for prefix in (
-            "create a confluence page in space ", "create confluence page in space ",
-            "create a wiki page in space ", "create wiki page in space ",
-            "create a confluence page in ", "create confluence page in ",
-            "create a wiki page in ", "create wiki page in ",
-            "create a page in space ", "create page in space ",
-            "create a new page in space ", "create new page in space ",
-            "create a page in ", "create page in ",
-            "create a new page in ", "create new page in ",
-            "new confluence page in space ", "new wiki page in space ",
-            "new confluence page in ", "new wiki page in ",
-            "new page in space ", "new page in ",
-            "add a page in space ", "add page in space ",
-            "add a page in ", "add page in ",
-            "create a confluence page ", "create confluence page ",
-            "create a wiki page ", "create wiki page ",
-            "create a page ", "create page ",
-            "new page ", "add page ",
-            "create ", "new ", "add ",
+            "create a confluence page in space ",
+            "create confluence page in space ",
+            "create a wiki page in space ",
+            "create wiki page in space ",
+            "create a confluence page in ",
+            "create confluence page in ",
+            "create a wiki page in ",
+            "create wiki page in ",
+            "create a page in space ",
+            "create page in space ",
+            "create a new page in space ",
+            "create new page in space ",
+            "create a page in ",
+            "create page in ",
+            "create a new page in ",
+            "create new page in ",
+            "new confluence page in space ",
+            "new wiki page in space ",
+            "new confluence page in ",
+            "new wiki page in ",
+            "new page in space ",
+            "new page in ",
+            "add a page in space ",
+            "add page in space ",
+            "add a page in ",
+            "add page in ",
+            "create a confluence page ",
+            "create confluence page ",
+            "create a wiki page ",
+            "create wiki page ",
+            "create a page ",
+            "create page ",
+            "new page ",
+            "add page ",
+            "create ",
+            "new ",
+            "add ",
         ):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
 
         args: dict = {}
@@ -662,16 +762,16 @@ class MCPGatewayTool(Tool):
             space_match = re.search(r"\b([A-Z][A-Z0-9]{0,9})\b", text)
             if space_match:
                 args["space"] = space_match.group(1)
-                remainder = text[space_match.end():].strip()
+                remainder = text[space_match.end() :].strip()
             else:
                 remainder = text
 
             for strip in ("titled ", "title ", "called "):
                 if remainder.lower().startswith(strip):
-                    remainder = remainder[len(strip):].strip()
+                    remainder = remainder[len(strip) :].strip()
                     break
 
-            args["title"] = remainder.strip('"\'')
+            args["title"] = remainder.strip("\"'")
 
         # Wrap bare text body in a paragraph tag for storage format
         if "body" in args and not args["body"].strip().startswith("<"):
@@ -688,19 +788,29 @@ class MCPGatewayTool(Tool):
           - "update page 12345 with title New Title and body <p>...</p>"
         """
         import re
+
         text = query.strip()
         # Strip action prefixes
         for prefix in (
-            "update confluence page ", "edit confluence page ",
-            "modify confluence page ", "change confluence page ",
-            "update wiki page ", "edit wiki page ",
-            "update page ", "edit page ",
-            "modify page ", "change page ",
-            "replace content of page ", "replace page ",
-            "update ", "edit ", "modify ", "change ",
+            "update confluence page ",
+            "edit confluence page ",
+            "modify confluence page ",
+            "change confluence page ",
+            "update wiki page ",
+            "edit wiki page ",
+            "update page ",
+            "edit page ",
+            "modify page ",
+            "change page ",
+            "replace content of page ",
+            "replace page ",
+            "update ",
+            "edit ",
+            "modify ",
+            "change ",
         ):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
 
         text = text.lstrip("#")
@@ -719,20 +829,20 @@ class MCPGatewayTool(Tool):
             id_match = re.match(r"(\d+)\b", text)
             if id_match:
                 args["pageId"] = id_match.group(1)
-                remainder = text[id_match.end():].strip()
+                remainder = text[id_match.end() :].strip()
 
                 for strip in ("with title ", "titled ", "title "):
                     if remainder.lower().startswith(strip):
-                        remainder = remainder[len(strip):].strip()
+                        remainder = remainder[len(strip) :].strip()
                         break
 
                 # Look for "and body ..." or "body ..."
                 body_match = re.search(r"\b(?:and\s+)?body\s+(.+)", remainder, re.IGNORECASE)
                 if body_match:
                     args["body"] = body_match.group(1).strip()
-                    args["title"] = remainder[:body_match.start()].strip().strip('"\'')
+                    args["title"] = remainder[: body_match.start()].strip().strip("\"'")
                 else:
-                    args["title"] = remainder.strip('"\'')
+                    args["title"] = remainder.strip("\"'")
 
         # Wrap bare text body in storage format
         if "body" in args and not args["body"].strip().startswith("<"):
@@ -744,10 +854,11 @@ class MCPGatewayTool(Tool):
     def _extract_space_key(text: str) -> str:
         """Pull a Confluence space key from text like 'space JB' or just 'JB'."""
         import re
+
         text = text.strip()
         for prefix in ("space ", "in space ", "in "):
             if text.lower().startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 break
         match = re.search(r"\b([A-Z][A-Z0-9]{0,9})\b", text)
         return match.group(1) if match else text.split()[0].upper() if text else ""

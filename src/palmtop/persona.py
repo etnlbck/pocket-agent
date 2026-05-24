@@ -10,14 +10,14 @@ No identity is hardcoded.  Fork, configure, and make it yours.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
-
 
 # ── Dataclasses ────────────────────────────────────────────────────────
+
 
 @dataclass
 class BrandConfig:
     """CSS color variables for email templates and web styling."""
+
     bg: str = "#0a0a0a"
     surface: str = "#141414"
     border: str = "#2a2a2a"
@@ -31,6 +31,7 @@ class BrandConfig:
 @dataclass
 class BookingLink:
     """A booking link shown in outreach emails."""
+
     name: str = ""
     duration: str = ""
     url: str = ""
@@ -40,6 +41,7 @@ class BookingLink:
 @dataclass
 class PersonaConfig:
     """Everything that makes this agent *yours*."""
+
     name: str = "Palmtop"
     tagline: str = "Your AI-powered assistant"
     owner_name: str = ""
@@ -54,25 +56,30 @@ class PersonaConfig:
         "Casual but competent — like texting your most capable friend."
     )
 
-    capabilities: List[str] = field(default_factory=lambda: [
-        "Scheduling, prioritization, and time management",
-        "Business decisions and tradeoff analysis",
-        "Research and recommendations",
-        "Creative projects and logistics",
-    ])
+    capabilities: list[str] = field(
+        default_factory=lambda: [
+            "Scheduling, prioritization, and time management",
+            "Business decisions and tradeoff analysis",
+            "Research and recommendations",
+            "Creative projects and logistics",
+        ]
+    )
 
-    services: List[str] = field(default_factory=lambda: [
-        "Full-stack web apps (Next.js, React, Python, Node)",
-        "AI/ML integrations and automation",
-        "API design and backend architecture",
-        "Technical consulting and architecture reviews",
-    ])
+    services: list[str] = field(
+        default_factory=lambda: [
+            "Full-stack web apps (Next.js, React, Python, Node)",
+            "AI/ML integrations and automation",
+            "API design and backend architecture",
+            "Technical consulting and architecture reviews",
+        ]
+    )
 
     brand: BrandConfig = field(default_factory=BrandConfig)
-    booking: List[BookingLink] = field(default_factory=list)
+    booking: list[BookingLink] = field(default_factory=list)
 
 
 # ── Prompt builders ────────────────────────────────────────────────────
+
 
 def build_system_prompt(p: PersonaConfig) -> str:
     """Generate the core agent system prompt from persona config."""

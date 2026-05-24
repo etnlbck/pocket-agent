@@ -35,10 +35,17 @@ packages = ["src/palmtop"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 99
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP"]
+ignore = ["E741", "N818"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/palmtop/brand.py" = ["E501"]  # inline HTML templates
+"src/palmtop/tools/base.py" = ["E501"]  # docstring examples
+"src/palmtop/tools/jira.py" = ["E501"]  # usage strings
+"src/palmtop/mcp/atlassian_server.py" = ["E501"]  # API descriptions
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

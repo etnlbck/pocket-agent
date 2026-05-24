@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import aiosqlite
 import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import aiosqlite
 
 log = logging.getLogger(__name__)
 
@@ -96,9 +97,7 @@ class PlanMemory:
         await self._db.commit()
         log.info("Plan memory ready: %s", self._db_path)
 
-    async def create_plan(
-        self, user_id: str, title: str, steps: list[str]
-    ) -> Plan:
+    async def create_plan(self, user_id: str, title: str, steps: list[str]) -> Plan:
         existing = await self._find_plan(user_id, title)
         if existing:
             return await self._update_plan_steps(existing, steps)
@@ -117,8 +116,14 @@ class PlanMemory:
             plan_steps.append(PlanStep(id=0, description=desc.strip(), status="pending", position=i))
         await self._db.commit()
         log.info("Created plan: %s (%d steps)", title, len(steps))
-        return Plan(id=plan_id, user_id=user_id, title=title.strip(),
-                    status="active", created_at="", steps=plan_steps)
+        return Plan(
+            id=plan_id,
+            user_id=user_id,
+            title=title.strip(),
+            status="active",
+            created_at="",
+            steps=plan_steps,
+        )
 
     async def _find_plan(self, user_id: str, title: str) -> Plan | None:
         cursor = await self._db.execute(
@@ -157,9 +162,7 @@ class PlanMemory:
                     (plan.id, step_text.strip(), pos),
                 )
                 plan.steps.append(PlanStep(id=0, description=step_text.strip(), status="pending", position=pos))
-        await self._db.execute(
-            "UPDATE plans SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (plan.id,)
-        )
+        await self._db.execute("UPDATE plans SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (plan.id,))
         await self._db.commit()
         log.info("Updated plan: %s", plan.title)
         return plan
@@ -171,9 +174,7 @@ class PlanMemory:
                    WHERE plan_id = ? AND LOWER(description) LIKE ?""",
                 (plan_id, f"%{desc.strip().lower()[:40]}%"),
             )
-        await self._db.execute(
-            "UPDATE plans SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (plan_id,)
-        )
+        await self._db.execute("UPDATE plans SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (plan_id,))
         await self._db.commit()
 
     async def close_plan(self, user_id: str, title: str) -> None:
@@ -204,14 +205,16 @@ class PlanMemory:
             pid = r[0]
             if pid not in plans_map:
                 plans_map[pid] = Plan(
-                    id=pid, user_id=r[1], title=r[2], status=r[3],
-                    created_at=r[4], updated_at=r[5] or "",
+                    id=pid,
+                    user_id=r[1],
+                    title=r[2],
+                    status=r[3],
+                    created_at=r[4],
+                    updated_at=r[5] or "",
                 )
                 plan_order.append(pid)
             if r[6] is not None:  # has a step
-                plans_map[pid].steps.append(
-                    PlanStep(id=r[6], description=r[7], status=r[8], position=r[9])
-                )
+                plans_map[pid].steps.append(PlanStep(id=r[6], description=r[7], status=r[8], position=r[9]))
         return [plans_map[pid] for pid in plan_order]
 
     async def close(self) -> None:
@@ -254,16 +257,18 @@ def extract_plans_from_reply(reply: str) -> list[dict]:
             else:
                 steps_pending.append(desc)
 
-        results.append({
-            "action": action,
-            "title": title,
-            "steps_pending": steps_pending,
-            "steps_done": steps_done,
-        })
+        results.append(
+            {
+                "action": action,
+                "title": title,
+                "steps_pending": steps_pending,
+                "steps_done": steps_done,
+            }
+        )
 
     for match in CLOSE_PATTERN.finditer(reply):
         start = match.end()
-        rest = reply[start:start + 200].strip().split("\n")[0].strip()
+        rest = reply[start : start + 200].strip().split("\n")[0].strip()
         if rest:
             results.append({"action": "close", "title": rest})
 

@@ -1,4 +1,5 @@
 """12 Week Year integration for palmtop (direct REST — no MCP package)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -176,10 +177,19 @@ class TwelveWyGatewayTool(Tool):
                     return n
             return None
 
-        if any(kw in q for kw in [
-            "coaching brief", "coach", "check-in", "check in", "morning",
-            "onboarding", "setup status", "next action",
-        ]):
+        if any(
+            kw in q
+            for kw in [
+                "coaching brief",
+                "coach",
+                "check-in",
+                "check in",
+                "morning",
+                "onboarding",
+                "setup status",
+                "next action",
+            ]
+        ):
             return _pick("coaching_brief"), {}
 
         if "onboarding" in q:

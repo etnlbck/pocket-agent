@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from palmtop.persona import PersonaConfig, BrandConfig, BookingLink
+from palmtop.persona import BookingLink, PersonaConfig
 
 if sys.version_info >= (3, 12):
     import tomllib
@@ -41,21 +41,21 @@ class CloudTierConfig:
 
 @dataclass
 class AtlassianConfig:
-    domain: str = ""       # e.g. yourcompany.atlassian.net
+    domain: str = ""  # e.g. yourcompany.atlassian.net
     email: str = ""
     api_token: str = ""
 
 
 @dataclass
 class EmailConfig:
-    api_key: str = ""          # AgentMail API key
-    inbox_id: str = ""         # default inbox (auto-detected if empty)
+    api_key: str = ""  # AgentMail API key
+    inbox_id: str = ""  # default inbox (auto-detected if empty)
 
 
 @dataclass
 class ObservabilityConfig:
-    enabled: bool = False      # opt-in
-    backend: str = "sqlite"    # "sqlite" (default, zero deps) or "langfuse"
+    enabled: bool = False  # opt-in
+    backend: str = "sqlite"  # "sqlite" (default, zero deps) or "langfuse"
 
 
 @dataclass
@@ -70,6 +70,7 @@ class MCPServerEntry:
 @dataclass
 class TwelveWyConfig:
     """12 Week Year MCP (remote HTTP to Railway)."""
+
     api_base_url: str = ""
     api_key: str = ""
 
@@ -91,6 +92,7 @@ class DigestConfig:
 @dataclass
 class AlignmentConfig:
     """12WY goal gate for AgentLoop (telegram/sms)."""
+
     mode: Literal["soft", "hard"] = "soft"
     goals_path: str = ""  # empty = auto-resolve docs/plans then data/docs/plans
     use_semantic: bool = True
@@ -104,7 +106,7 @@ class VoiceConfig:
     stt_api_key: str = ""  # auto-filled from GOOGLE_API_KEY for gemini
     tts_enabled: bool = False
     tts_provider: str = "gemini"  # "gemini" (default) or "openai"
-    tts_voice: str = "Kore"       # Gemini voice name (Kore, Puck, Charon, etc.)
+    tts_voice: str = "Kore"  # Gemini voice name (Kore, Puck, Charon, etc.)
 
 
 @dataclass
@@ -116,14 +118,15 @@ class MonitorConfig:
     jira_interval_minutes: int = 5
     stale_plan_days: int = 3
     alert_cooldown_hours: int = 2
-    quiet_hours_start: int = 22   # 10 PM — hold alerts until morning
-    quiet_hours_end: int = 7      # 7 AM
+    quiet_hours_start: int = 22  # 10 PM — hold alerts until morning
+    quiet_hours_end: int = 7  # 7 AM
     email_auto_reply: bool = False  # auto-reply to threads the agent is part of
 
 
 @dataclass
 class EngineConfig:
     """Sovereign engine invocable from the agent (uses cloud backends)."""
+
     enabled: bool = True
 
 
@@ -136,6 +139,7 @@ class CursorConfig:
     allowed_repos (whitelist), max_concurrent (rate limit), and
     auto_create_pr (changes land as PRs, not direct pushes).
     """
+
     enabled: bool = False
     api_key: str = ""  # prefer CURSOR_API_KEY env var
     allowed_repos: list[str] = field(default_factory=list)
@@ -151,6 +155,7 @@ class CursorConfig:
 @dataclass
 class VercelConfig:
     """Vercel deployments — trigger production/preview builds via API."""
+
     enabled: bool = False
     api_token: str = ""  # prefer VERCEL_TOKEN env var
     default_project_id: str = ""  # prj_xxx from dashboard
@@ -164,6 +169,7 @@ class VercelConfig:
 @dataclass
 class RailwayConfig:
     """Railway service deploys via GraphQL API."""
+
     enabled: bool = False
     api_token: str = ""  # prefer RAILWAY_TOKEN env var
     default_project_id: str = ""
@@ -181,12 +187,13 @@ class WebConfig:
     submit intake forms, but have ZERO access to tools, memory, or internal
     systems.  See web/agent.py for the security boundary.
     """
+
     enabled: bool = False
-    host: str = "127.0.0.1"       # localhost only — cloudflared proxies
+    host: str = "127.0.0.1"  # localhost only — cloudflared proxies
     port: int = 8080
-    chat_rpm: int = 10            # chat messages per minute per IP
-    chat_rpd: int = 100           # chat messages per day per IP
-    form_rpm: int = 3             # form submissions per minute per IP
+    chat_rpm: int = 10  # chat messages per minute per IP
+    chat_rpd: int = 100  # chat messages per day per IP
+    form_rpm: int = 3  # form submissions per minute per IP
     max_concurrent_chats: int = 5
     max_message_length: int = 1000
     allowed_origin: str = ""
@@ -195,6 +202,7 @@ class WebConfig:
 @dataclass
 class SmsConfig:
     """Dual-channel SMS listener (runs alongside Telegram on the S21)."""
+
     enabled: bool = False
     allowed_numbers: list[str] = field(default_factory=list)  # e.g. ["+15551234567"]
     # RCS notifications show contact names, not numbers — match notification title
@@ -256,9 +264,7 @@ class Config:
                             if hasattr(cfg.persona.brand, bk):
                                 setattr(cfg.persona.brand, bk, bv)
                     elif k == "booking":
-                        cfg.persona.booking = [
-                            BookingLink(**entry) for entry in v
-                        ]
+                        cfg.persona.booking = [BookingLink(**entry) for entry in v]
                     elif hasattr(cfg.persona, k):
                         setattr(cfg.persona, k, v)
                 # Derive allowed_origin from persona domain if not set
@@ -313,13 +319,15 @@ class Config:
                         setattr(cfg.twelvewy, k, v)
             if "mcp" in raw:
                 for entry in raw["mcp"].get("servers", []):
-                    cfg.mcp_servers.append(MCPServerEntry(
-                        name=entry.get("name", ""),
-                        command=entry.get("command", []),
-                        env=entry.get("env", {}),
-                        description=entry.get("description", ""),
-                        cwd=entry.get("cwd", ""),
-                    ))
+                    cfg.mcp_servers.append(
+                        MCPServerEntry(
+                            name=entry.get("name", ""),
+                            command=entry.get("command", []),
+                            env=entry.get("env", {}),
+                            description=entry.get("description", ""),
+                            cwd=entry.get("cwd", ""),
+                        )
+                    )
             if "digest" in raw:
                 for k, v in raw["digest"].items():
                     if hasattr(cfg.digest, k):

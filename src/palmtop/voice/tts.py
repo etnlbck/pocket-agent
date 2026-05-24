@@ -9,6 +9,7 @@ the agent responds with both a text message and a voice note in Telegram.
 Gemini returns raw PCM (audio/L16) which is huge and unplayable by Telegram.
 We transcode to OGG Opus via ffmpeg for small files that Telegram plays natively.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,8 +55,8 @@ def _pcm_to_wav(pcm_bytes: bytes, rate: int) -> Path:
     wav_path = Path(tmp.name)
 
     with wave.open(str(wav_path), "wb") as wf:
-        wf.setnchannels(1)        # mono
-        wf.setsampwidth(2)        # 16-bit = 2 bytes
+        wf.setnchannels(1)  # mono
+        wf.setsampwidth(2)  # 16-bit = 2 bytes
         wf.setframerate(rate)
         wf.writeframes(pcm_bytes)
 
@@ -84,21 +85,30 @@ async def _pcm_to_ogg(pcm_bytes: bytes, mime: str) -> Path | None:
 
     try:
         proc = await asyncio.create_subprocess_exec(
-            ffmpeg, "-y",
-            "-f", "s16le",        # raw signed 16-bit little-endian
-            "-ar", rate,          # sample rate from Gemini
-            "-ac", "1",           # mono
-            "-i", "pipe:0",      # read from stdin
-            "-c:a", "libopus",
-            "-b:a", "32k",       # 32 kbps — plenty for speech
-            "-application", "voip",
+            ffmpeg,
+            "-y",
+            "-f",
+            "s16le",  # raw signed 16-bit little-endian
+            "-ar",
+            rate,  # sample rate from Gemini
+            "-ac",
+            "1",  # mono
+            "-i",
+            "pipe:0",  # read from stdin
+            "-c:a",
+            "libopus",
+            "-b:a",
+            "32k",  # 32 kbps — plenty for speech
+            "-application",
+            "voip",
             str(ogg_path),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await asyncio.wait_for(
-            proc.communicate(input=pcm_bytes), timeout=30,
+            proc.communicate(input=pcm_bytes),
+            timeout=30,
         )
 
         if proc.returncode != 0:
@@ -108,11 +118,12 @@ async def _pcm_to_ogg(pcm_bytes: bytes, mime: str) -> Path | None:
 
         log.info(
             "Transcoded PCM→OGG: %d bytes → %d bytes",
-            len(pcm_bytes), ogg_path.stat().st_size,
+            len(pcm_bytes),
+            ogg_path.stat().st_size,
         )
         return ogg_path
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.warning("ffmpeg PCM→OGG timed out")
         ogg_path.unlink(missing_ok=True)
         return None
@@ -144,6 +155,7 @@ class GeminiTTS:
         self._voice = voice
 
         import httpx
+
         self._client = httpx.AsyncClient(timeout=60.0)
         log.info("GeminiTTS ready: model=%s, voice=%s", self._model, self._voice)
 
@@ -160,9 +172,11 @@ class GeminiTTS:
 
         try:
             body = {
-                "contents": [{
-                    "parts": [{"text": text}],
-                }],
+                "contents": [
+                    {
+                        "parts": [{"text": text}],
+                    }
+                ],
                 "generationConfig": {
                     "responseModalities": ["AUDIO"],
                     "speechConfig": {
@@ -193,13 +207,23 @@ class GeminiTTS:
                     break
 
                 if resp.status_code not in self._RETRY_CODES or attempt == self._MAX_RETRIES:
-                    log.warning("Gemini TTS error %d (attempt %d/%d): %s",
-                                resp.status_code, attempt, self._MAX_RETRIES, resp.text[:200])
+                    log.warning(
+                        "Gemini TTS error %d (attempt %d/%d): %s",
+                        resp.status_code,
+                        attempt,
+                        self._MAX_RETRIES,
+                        resp.text[:200],
+                    )
                     return None
 
-                delay = 2 ** attempt  # 2s, 4s
-                log.info("Gemini TTS %d, retrying in %ds (%d/%d)",
-                         resp.status_code, delay, attempt, self._MAX_RETRIES)
+                delay = 2**attempt  # 2s, 4s
+                log.info(
+                    "Gemini TTS %d, retrying in %ds (%d/%d)",
+                    resp.status_code,
+                    delay,
+                    attempt,
+                    self._MAX_RETRIES,
+                )
                 await asyncio.sleep(delay)
 
             if data is None:
@@ -226,7 +250,9 @@ class GeminiTTS:
                     mime = inline["mimeType"]
                     log.info(
                         "Gemini TTS: %d bytes (%s) for %d chars",
-                        len(audio_bytes), mime, len(text),
+                        len(audio_bytes),
+                        mime,
+                        len(text),
                     )
 
                     # Gemini returns raw PCM (audio/L16) — transcode to
@@ -241,11 +267,10 @@ class GeminiTTS:
                         return _pcm_to_wav(audio_bytes, _parse_pcm_rate(mime))
 
                     # Already a usable format (ogg/mp3)
-                    suffix = ".ogg" if "ogg" in mime else (
-                        ".mp3" if "mp3" in mime or "mpeg" in mime else ".wav"
-                    )
+                    suffix = ".ogg" if "ogg" in mime else (".mp3" if "mp3" in mime or "mpeg" in mime else ".wav")
                     tmp = tempfile.NamedTemporaryFile(
-                        suffix=suffix, delete=False,
+                        suffix=suffix,
+                        delete=False,
                     )
                     tmp.write(audio_bytes)
                     tmp.close()
@@ -280,6 +305,7 @@ class OpenAITTS:
         self._model = model
 
         import httpx
+
         self._client = httpx.AsyncClient(timeout=60.0)
         log.info("OpenAITTS ready: model=%s, voice=%s", self._model, self._voice)
 
@@ -315,7 +341,8 @@ class OpenAITTS:
 
             log.info(
                 "OpenAI TTS: %d bytes for %d chars",
-                len(resp.content), len(text),
+                len(resp.content),
+                len(text),
             )
             return Path(tmp.name)
 
@@ -332,6 +359,7 @@ def create_tts(voice_config) -> TTSProvider | None:
     try:
         if provider == "openai":
             import os
+
             key = os.environ.get("OPENAI_API_KEY", "")
             return OpenAITTS(key)
         else:

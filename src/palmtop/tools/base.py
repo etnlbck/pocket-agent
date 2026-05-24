@@ -39,71 +39,156 @@ from that data. Do not narrate that you are fetching or about to check; emit the
 
 TOOL_HINT_KEYWORDS = {
     "calendar": [
-        "calendar", "schedule", "event", "meeting", "appointment",
-        "what's on", "whats on", "do i have", "am i free", "busy",
-        "block", "book", "party", "dinner", "lunch", "brunch",
+        "calendar",
+        "schedule",
+        "event",
+        "meeting",
+        "appointment",
+        "what's on",
+        "whats on",
+        "do i have",
+        "am i free",
+        "busy",
+        "block",
+        "book",
+        "party",
+        "dinner",
+        "lunch",
+        "brunch",
     ],
     "search": [
-        "search the web", "search online", "find out about",
-        "latest news on", "google search", "web search",
+        "search the web",
+        "search online",
+        "find out about",
+        "latest news on",
+        "google search",
+        "web search",
         "look up online",
     ],
     "remind": [
-        "remind", "reminder", "don't forget", "dont forget",
-        "alert me", "notify me", "ping me",
+        "remind",
+        "reminder",
+        "don't forget",
+        "dont forget",
+        "alert me",
+        "notify me",
+        "ping me",
     ],
     "kb": [
-        "knowledge base", "in my notes", "in my kb",
-        "what do i have on", "what did i save",
-        "your architecture", "your codebase", "how are you built",
-        "your source code", "your own code",
+        "knowledge base",
+        "in my notes",
+        "in my kb",
+        "what do i have on",
+        "what did i save",
+        "your architecture",
+        "your codebase",
+        "how are you built",
+        "your source code",
+        "your own code",
     ],
     "jira": [
-        "jira", "ticket", "sprint", "backlog",
-        "my issues", "my tasks", "assigned to me",
-        "atlassian.net/browse", "atlassian.net/jira",
-        "jira board", "jira project", "issue tracker",
-        "open issues", "search issues", "search tickets",
+        "jira",
+        "ticket",
+        "sprint",
+        "backlog",
+        "my issues",
+        "my tasks",
+        "assigned to me",
+        "atlassian.net/browse",
+        "atlassian.net/jira",
+        "jira board",
+        "jira project",
+        "issue tracker",
+        "open issues",
+        "search issues",
+        "search tickets",
     ],
     "confluence": [
-        "confluence", "wiki page", "documentation page",
-        "wiki/spaces", "atlassian.net/wiki",
-        "create a page", "update the page", "edit the page",
-        "write to confluence", "publish to confluence",
-        "search pages", "search confluence",
+        "confluence",
+        "wiki page",
+        "documentation page",
+        "wiki/spaces",
+        "atlassian.net/wiki",
+        "create a page",
+        "update the page",
+        "edit the page",
+        "write to confluence",
+        "publish to confluence",
+        "search pages",
+        "search confluence",
     ],
     "email": [
-        "email", "mail", "inbox", "send an email", "send email",
-        "check my email", "check email", "read email",
-        "reply to", "forward to", "new message",
-        "my email address", "email address",
+        "email",
+        "mail",
+        "inbox",
+        "send an email",
+        "send email",
+        "check my email",
+        "check email",
+        "read email",
+        "reply to",
+        "forward to",
+        "new message",
+        "my email address",
+        "email address",
     ],
     "files": [
-        "save this to a file", "save to file", "write to file",
-        "create a file", "create a doc", "create a document",
-        "save this as", "export to file", "write a report",
-        "update the doc", "update the file", "append to file",
-        "my files", "my documents", "list files", "list docs",
-        "show my files", "show my docs",
+        "save this to a file",
+        "save to file",
+        "write to file",
+        "create a file",
+        "create a doc",
+        "create a document",
+        "save this as",
+        "export to file",
+        "write a report",
+        "update the doc",
+        "update the file",
+        "append to file",
+        "my files",
+        "my documents",
+        "list files",
+        "list docs",
+        "show my files",
+        "show my docs",
     ],
     "12wy-reports": [
-        "12 week year", "12wy", "12 wy", "twelve week",
-        "execution score", "weekly plan", "my tactics", "my season",
-        "12-week", "coaching brief", "onboarding status",
+        "12 week year",
+        "12wy",
+        "12 wy",
+        "twelve week",
+        "execution score",
+        "weekly plan",
+        "my tactics",
+        "my season",
+        "12-week",
+        "coaching brief",
+        "onboarding status",
     ],
     "cursor": [
-        "cursor agent", "cloud agent", "delegate to cursor",
-        "open a pr", "create a pr for", "fix in the repo",
-        "work on the codebase", "cursor cloud",
+        "cursor agent",
+        "cloud agent",
+        "delegate to cursor",
+        "open a pr",
+        "create a pr for",
+        "fix in the repo",
+        "work on the codebase",
+        "cursor cloud",
     ],
     "vercel": [
-        "vercel", "deploy to vercel", "vercel deploy",
-        "production deploy", "preview deploy vercel",
+        "vercel",
+        "deploy to vercel",
+        "vercel deploy",
+        "production deploy",
+        "preview deploy vercel",
         ".vercel.app",
     ],
     "railway": [
-        "railway", "deploy to railway", "railway deploy",
-        "railway service", "up.railway.app",
+        "railway",
+        "deploy to railway",
+        "railway deploy",
+        "railway service",
+        "up.railway.app",
     ],
 }
 
@@ -114,8 +199,17 @@ _GENERIC_TOOLS = {"search"}
 
 # Specific tools — if any of these match, generic tools are dropped.
 _SPECIFIC_TOOLS = {
-    "jira", "confluence", "email", "kb", "calendar", "remind", "files",
-    "12wy-reports", "cursor", "vercel", "railway",
+    "jira",
+    "confluence",
+    "email",
+    "kb",
+    "calendar",
+    "remind",
+    "files",
+    "12wy-reports",
+    "cursor",
+    "vercel",
+    "railway",
 }
 
 
@@ -145,12 +239,12 @@ class ToolResult:
     query: str
     result: str
     success: bool
-    error_kind: str | None = None   # auth, syntax, not_found, timeout, rate_limit,
-                                    # connection, server, not_configured, unknown
-    retry_hint: str | None = None   # "simplify", "retry", or None
-    raw_response: str = ""          # original unprocessed response (for tracing)
-    retried: bool = False           # True if this result came from a retry attempt
-    original_error: str = ""        # first-attempt error if retried
+    error_kind: str | None = None  # auth, syntax, not_found, timeout, rate_limit,
+    # connection, server, not_configured, unknown
+    retry_hint: str | None = None  # "simplify", "retry", or None
+    raw_response: str = ""  # original unprocessed response (for tracing)
+    retried: bool = False  # True if this result came from a retry attempt
+    original_error: str = ""  # first-attempt error if retried
 
 
 # ---------------------------------------------------------------------------
@@ -178,27 +272,33 @@ def classify_result(tool_name: str, query: str, result: str) -> ToolResult:
     for pattern, kind, hint in _ERROR_PATTERNS:
         if pattern.search(result):
             return ToolResult(
-                tool=tool_name, query=query, result=result,
-                success=False, error_kind=kind,
-                retry_hint=hint, raw_response=result,
+                tool=tool_name,
+                query=query,
+                result=result,
+                success=False,
+                error_kind=kind,
+                retry_hint=hint,
+                raw_response=result,
             )
 
     # Generic error heuristic — tools prefix errors with "Error:" or "Toolname error"
     r_lower = result.lower()
-    if (
-        r_lower.startswith("error:")
-        or f"{tool_name} error" in r_lower
-        or r_lower.startswith("failed:")
-    ):
+    if r_lower.startswith("error:") or f"{tool_name} error" in r_lower or r_lower.startswith("failed:"):
         return ToolResult(
-            tool=tool_name, query=query, result=result,
-            success=False, error_kind="unknown",
+            tool=tool_name,
+            query=query,
+            result=result,
+            success=False,
+            error_kind="unknown",
             raw_response=result,
         )
 
     return ToolResult(
-        tool=tool_name, query=query, result=result,
-        success=True, raw_response=result,
+        tool=tool_name,
+        query=query,
+        result=result,
+        success=True,
+        raw_response=result,
     )
 
 
@@ -209,7 +309,9 @@ def simplify_query(query: str) -> str:
     q = re.sub(
         r"^(?:search|find|get|list|show)\s+(?:jira|confluence)?\s*"
         r"(?:issues?|pages?|tickets?|docs?)?\s*:?\s*",
-        "", q, flags=re.IGNORECASE,
+        "",
+        q,
+        flags=re.IGNORECASE,
     ).strip()
     # Remove JQL/CQL operators
     q = re.sub(r"\b(?:AND|OR|NOT|ORDER\s+BY|ASC|DESC)\b", " ", q, flags=re.IGNORECASE)
@@ -372,6 +474,7 @@ def resolve_tool_name(registry: ToolRegistry, name: str) -> str | None:
 # ---------------------------------------------------------------------------
 # ACTION chains — multi-step intent with fallbacks
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ActionStep:

@@ -76,9 +76,7 @@ class SmsChannel:
             reply = await self._agent.handle(body)
 
             log.info("Replying to %s: %s", number, reply[:80])
-            await asyncio.get_running_loop().run_in_executor(
-                None, _send_sms, number, reply
-            )
+            await asyncio.get_running_loop().run_in_executor(None, _send_sms, number, reply)
 
     @staticmethod
     def _msg_id(msg: dict) -> str:

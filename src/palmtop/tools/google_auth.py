@@ -55,25 +55,30 @@ def run_auth(data_dir: Path) -> None:
     client_secret = client_info["client_secret"]
     redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
 
-    params = urlencode({
-        "client_id": client_id,
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": SCOPES,
-        "access_type": "offline",
-        "prompt": "consent",
-    })
+    params = urlencode(
+        {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": SCOPES,
+            "access_type": "offline",
+            "prompt": "consent",
+        }
+    )
 
     print(f"\nOpen this URL in your browser:\n\n{AUTH_URL}?{params}\n")
     code = input("Paste the authorization code here: ").strip()
 
-    resp = httpx.post(TOKEN_URL, data={
-        "code": code,
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code",
-    })
+    resp = httpx.post(
+        TOKEN_URL,
+        data={
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        },
+    )
 
     if resp.status_code != 200:
         print(f"Token exchange failed: {resp.text}")

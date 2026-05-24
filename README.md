@@ -1,5 +1,7 @@
 # Palmtop
 
+[![CI](https://github.com/jbxter/palmtop/actions/workflows/ci.yml/badge.svg)](https://github.com/jbxter/palmtop/actions/workflows/ci.yml)
+
 A self-hosted AI agent platform that runs on a phone — or anywhere.
 
 Built and battle-tested on a Galaxy S21 running Termux, deployed via Cloudflare Tunnel, handling real business operations 24/7 with zero cloud compute costs.

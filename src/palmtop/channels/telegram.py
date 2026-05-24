@@ -5,8 +5,9 @@ import html
 import logging
 import re
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
@@ -68,10 +69,7 @@ def md_to_telegram_html(text: str) -> str:
 
     def _stash_link(m: re.Match[str]) -> str:
         key = _PLACEHOLDER.format(len(placeholders))
-        placeholders[key] = (
-            f'<a href="{html.escape(m.group(2), quote=True)}">'
-            f"{html.escape(m.group(1))}</a>"
-        )
+        placeholders[key] = f'<a href="{html.escape(m.group(2), quote=True)}">{html.escape(m.group(1))}</a>'
         return key
 
     text = _MD_LINK.sub(_stash_link, text)
@@ -135,7 +133,7 @@ def sanitize_telegram_html(text: str) -> str:
     out: list[str] = []
     last = 0
     for m in _PAIRED_TAGS.finditer(text):
-        out.append(text[last:m.start()])
+        out.append(text[last : m.start()])
         is_close = m.group(1) == "/"
         tag = m.group(2).lower()
         if tag not in _ALLOWED_TAGS:
@@ -173,9 +171,7 @@ class _TypingIndicator:
     async def _loop(self) -> None:
         try:
             while True:
-                await self._bot.send_chat_action(
-                    chat_id=self._chat_id, action=ChatAction.TYPING
-                )
+                await self._bot.send_chat_action(chat_id=self._chat_id, action=ChatAction.TYPING)
                 await asyncio.sleep(TYPING_INTERVAL)
         except asyncio.CancelledError:
             pass
@@ -216,12 +212,7 @@ class TelegramChannel:
         # concurrent_updates lets /approve and /deny be processed while
         # /cursor or /engine is blocking on the blessing gate.  Without
         # this, the sequential update queue starves the approval handler.
-        self._app = (
-            Application.builder()
-            .token(bot_token)
-            .concurrent_updates(True)
-            .build()
-        )
+        self._app = Application.builder().token(bot_token).concurrent_updates(True).build()
         self._app.add_handler(CommandHandler("engine", self._on_engine))
         self._app.add_handler(CommandHandler("claude", self._on_engine))
         self._app.add_handler(CommandHandler("cursor", self._on_cursor))
@@ -263,9 +254,7 @@ class TelegramChannel:
             return
 
         if not self._tts:
-            await update.message.reply_text(
-                "Voice replies aren't configured — TTS is disabled."
-            )
+            await update.message.reply_text("Voice replies aren't configured — TTS is disabled.")
             return
 
         if uid in self._voice_mode_users:
@@ -283,7 +272,11 @@ class TelegramChannel:
         uid = user.id if user else None
         if self._allowed_users and uid not in self._allowed_users:
             return
-        log.info("/approve from %s (gate pending: %s)", uid, self._blessing_gate.is_pending if self._blessing_gate else "no gate")
+        log.info(
+            "/approve from %s (gate pending: %s)",
+            uid,
+            self._blessing_gate.is_pending if self._blessing_gate else "no gate",
+        )
         if self._blessing_gate and self._blessing_gate.is_pending:
             self._blessing_gate.approve()
             await update.message.reply_text("✅ Approved — continuing.")
@@ -296,7 +289,11 @@ class TelegramChannel:
         uid = user.id if user else None
         if self._allowed_users and uid not in self._allowed_users:
             return
-        log.info("/deny from %s (gate pending: %s)", uid, self._blessing_gate.is_pending if self._blessing_gate else "no gate")
+        log.info(
+            "/deny from %s (gate pending: %s)",
+            uid,
+            self._blessing_gate.is_pending if self._blessing_gate else "no gate",
+        )
         if self._blessing_gate and self._blessing_gate.is_pending:
             self._blessing_gate.deny()
             await update.message.reply_text("❌ Denied — execution blocked.")
@@ -311,9 +308,7 @@ class TelegramChannel:
             return
 
         if not self._stt:
-            await update.message.reply_text(
-                "Voice messages aren't set up yet. Send a text message instead."
-            )
+            await update.message.reply_text("Voice messages aren't set up yet. Send a text message instead.")
             return
 
         ogg_path = None
@@ -372,7 +367,10 @@ class TelegramChannel:
                 ogg_path.unlink(missing_ok=True)
 
     async def _send_voice_reply(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str,
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        text: str,
     ) -> None:
         """Synthesize text to speech and send as a Telegram voice message."""
         audio_path = None
@@ -418,7 +416,11 @@ class TelegramChannel:
         log.info("Message from %s (id=%s): %s", user.first_name if user else "?", uid, text[:80])
 
         if self._allowed_users and uid not in self._allowed_users:
-            log.warning("Rejected message from unauthorized user %s (id=%s)", user.first_name if user else "?", uid)
+            log.warning(
+                "Rejected message from unauthorized user %s (id=%s)",
+                user.first_name if user else "?",
+                uid,
+            )
             return
 
         # Try streaming path first, fall back to non-streaming
@@ -435,8 +437,11 @@ class TelegramChannel:
             await self._send_voice_reply(update, context, reply_text)
 
     async def _on_message_stream(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE,
-        text: str, user_id: str,
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        text: str,
+        user_id: str,
     ) -> str:
         """Handle a message with streaming — edit placeholder as chunks arrive.
 
@@ -564,15 +569,17 @@ class TelegramChannel:
     def run(
         self,
         on_start: Callable[[], None] | None = None,
-        async_init: Callable[[], "asyncio.coroutines"] | None = None,
+        async_init: Callable[[], asyncio.coroutines] | None = None,
     ) -> None:
         log.info("Starting Telegram polling...")
         if on_start or async_init:
+
             async def _post_init(app):
                 if async_init:
                     await async_init()
                 if on_start:
                     on_start()
+
             self._app.post_init = _post_init
         self._app.run_polling(drop_pending_updates=True)
 

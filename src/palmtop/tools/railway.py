@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
@@ -32,9 +33,9 @@ class RailwayDeployTool(Tool):
 
     def __init__(
         self,
-        cfg: "RailwayConfig",
+        cfg: RailwayConfig,
         *,
-        blessing_gate: "BlessingGate | None" = None,
+        blessing_gate: BlessingGate | None = None,
     ) -> None:
         self._cfg = cfg
         self._blessing_gate = blessing_gate
@@ -72,9 +73,7 @@ class RailwayDeployTool(Tool):
             raise RuntimeError(f"Railway API HTTP {resp.status_code}: {resp.text[:200]}")
         payload = resp.json()
         if payload.get("errors"):
-            msgs = "; ".join(
-                e.get("message", str(e)) for e in payload["errors"][:3]
-            )
+            msgs = "; ".join(e.get("message", str(e)) for e in payload["errors"][:3])
             raise RuntimeError(f"Railway GraphQL error: {msgs}")
         return payload.get("data") or {}
 
@@ -200,9 +199,7 @@ class RailwayDeployTool(Tool):
         lines = ["Recent Railway deployments:"]
         for edge in edges:
             node = edge.get("node") or {}
-            lines.append(
-                f"  {node.get('id', '?')} [{node.get('status', '?')}] {node.get('url') or ''}"
-            )
+            lines.append(f"  {node.get('id', '?')} [{node.get('status', '?')}] {node.get('url') or ''}")
         return "\n".join(lines)
 
     async def _get_deployment(self, deployment_id: str) -> str:

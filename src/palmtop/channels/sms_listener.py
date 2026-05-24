@@ -27,7 +27,8 @@ import logging
 import re
 import subprocess
 import time
-from typing import TYPE_CHECKING, Callable, Awaitable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from palmtop.core.loop import AgentLoop
@@ -42,8 +43,8 @@ MAX_SMS_LENGTH = 1600  # standard multi-part SMS limit
 
 # Package names for Android messaging apps (RCS notification source)
 MESSAGING_PACKAGES = {
-    "com.google.android.apps.messaging",   # Google Messages
-    "com.samsung.android.messaging",        # Samsung Messages
+    "com.google.android.apps.messaging",  # Google Messages
+    "com.samsung.android.messaging",  # Samsung Messages
 }
 
 
@@ -81,11 +82,7 @@ def _fetch_contacts() -> dict[str, str]:
     if not raw.strip():
         return {}
     contacts = json.loads(raw)
-    return {
-        c.get("name", "").lower(): c.get("number", "")
-        for c in contacts
-        if c.get("name") and c.get("number")
-    }
+    return {c.get("name", "").lower(): c.get("number", "") for c in contacts if c.get("name") and c.get("number")}
 
 
 def _send_sms(number: str, body: str) -> None:
@@ -113,21 +110,15 @@ class SmsListener:
 
     def __init__(
         self,
-        agent: "AgentLoop",
+        agent: AgentLoop,
         *,
         allowed_numbers: list[str] | None = None,
         allowed_sender_names: list[str] | None = None,
         telegram_send_fn: Callable[[str, str], Awaitable[None]] | None = None,
     ) -> None:
         self._agent = agent
-        self._allowed = (
-            {self._normalize(n) for n in allowed_numbers} if allowed_numbers else None
-        )
-        self._allowed_names = (
-            {n.lower().strip() for n in allowed_sender_names}
-            if allowed_sender_names
-            else None
-        )
+        self._allowed = {self._normalize(n) for n in allowed_numbers} if allowed_numbers else None
+        self._allowed_names = {n.lower().strip() for n in allowed_sender_names} if allowed_sender_names else None
         self._telegram_send = telegram_send_fn
         self._seen: set[str] = set()
         self._task: asyncio.Task | None = None
@@ -314,8 +305,7 @@ class SmsListener:
             number = self._resolve_sender_number(title)
             if not number:
                 log.warning(
-                    "RCS from '%s' — allowed sender but no reply number "
-                    "(add phone contact or allowed_numbers)",
+                    "RCS from '%s' — allowed sender but no reply number (add phone contact or allowed_numbers)",
                     title,
                 )
                 continue
@@ -380,8 +370,7 @@ class SmsListener:
         if self._contacts_loaded and self._allowed_names:
             for contact_name, phone in self._contacts.items():
                 if contact_name in self._allowed_names or any(
-                    contact_name == n or contact_name.startswith(n + " ")
-                    for n in self._allowed_names
+                    contact_name == n or contact_name.startswith(n + " ") for n in self._allowed_names
                 ):
                     if key == contact_name or key.startswith(contact_name + " "):
                         return self._normalize(phone)

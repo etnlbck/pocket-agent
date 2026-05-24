@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import html as _html
 
-from palmtop.persona import PersonaConfig, BrandConfig
-
+from palmtop.persona import BrandConfig, PersonaConfig
 
 # ── Default brand (used when no persona is available) ──────────────
 _DEFAULT_BRAND = BrandConfig()
@@ -19,9 +18,7 @@ def _paragraphs_html(text: str, brand: BrandConfig) -> str:
     """Convert plain text paragraphs to styled HTML <p> tags."""
     paragraphs = [p.strip() for p in text.strip().split("\n\n") if p.strip()]
     return "\n".join(
-        f'<p style="margin:0 0 16px;line-height:1.6;'
-        f'font-size:15px;color:{brand.text};">'
-        f"{_html.escape(p)}</p>"
+        f'<p style="margin:0 0 16px;line-height:1.6;font-size:15px;color:{brand.text};">{_html.escape(p)}</p>'
         for p in paragraphs
     )
 
@@ -46,7 +43,7 @@ def booking_buttons_html(
             f'text-decoration:none;border-radius:6px;">'
             f"{label}</a>"
             f'<br><span style="font-size:12px;color:{b_.text_muted};">'
-            f'{b["desc"]}</span>'
+            f"{b['desc']}</span>"
             f"</td></tr>"
         )
     return "\n".join(rows)
@@ -99,8 +96,7 @@ def build_email_html(
     footer_parts = []
     if domain_url:
         footer_parts.append(
-            f'<a href="{domain_url}" style="color:{brand.accent};text-decoration:none;">'
-            f"{domain_label}</a>"
+            f'<a href="{domain_url}" style="color:{brand.accent};text-decoration:none;">{domain_label}</a>'
         )
     if location_line:
         footer_parts.append(location_line)

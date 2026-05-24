@@ -1,4 +1,5 @@
 """Regression tests for the four autonomy gaps (stub must never return)."""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +7,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+
+pytest.importorskip("palmtop.core.engine")
 
 from palmtop.core.engine import PalmtopAgent
 from palmtop.core.goal_aligner import GoalAligner
@@ -81,9 +84,7 @@ def test_gap3_semantic_not_tag_substring_only(tmp_path: Path) -> None:
         "confidence": 0.9,
         "reason": "Poster copy serves wheatpaste goal",
     }
-    r = GoalAligner(p, semantic_judge=mock_judge).check_alignment(
-        "write the zine layout tonight"
-    )
+    r = GoalAligner(p, semantic_judge=mock_judge).check_alignment("write the zine layout tonight")
     assert r["is_aligned"]
     assert r["method"] == "semantic"
     mock_judge.judge.assert_called_once()

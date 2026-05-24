@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx
 import pytest
+
+pytest.importorskip("palmtop.cursor.client")
 
 from palmtop.cursor.client import CursorAgentsClient, CursorAPIError
 
@@ -15,7 +16,9 @@ async def test_create_agent_success() -> None:
     client = CursorAgentsClient("cursor_test_key")
     mock_resp = MagicMock()
     mock_resp.status_code = 200
-    mock_resp.content = b'{"agent":{"id":"bc-1","url":"https://cursor.com/agents/bc-1"},"run":{"id":"run-1","status":"CREATING"}}'
+    mock_resp.content = (
+        b'{"agent":{"id":"bc-1","url":"https://cursor.com/agents/bc-1"},"run":{"id":"run-1","status":"CREATING"}}'
+    )
     mock_resp.json.return_value = {
         "agent": {"id": "bc-1", "url": "https://cursor.com/agents/bc-1"},
         "run": {"id": "run-1", "status": "CREATING"},

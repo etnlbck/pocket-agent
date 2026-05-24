@@ -9,6 +9,7 @@ Config (config.toml):
     inbox_id = "inbox_..."      # default inbox to use
     # OR set env vars: AGENTMAIL_API_KEY, AGENTMAIL_INBOX_ID
 """
+
 from __future__ import annotations
 
 import logging
@@ -220,6 +221,7 @@ class EmailTool(Tool):
 
         # Wrap in branded HTML template
         from palmtop.brand import build_email_html
+
         email_html = build_email_html(body)
 
         client = self._get_client()
@@ -248,6 +250,7 @@ class EmailTool(Tool):
 
         # Wrap in branded HTML template
         from palmtop.brand import build_email_html
+
         email_html = build_email_html(body)
 
         client = self._get_client()
@@ -326,6 +329,7 @@ class EmailTool(Tool):
         if not self._inbox_id:
             return None
         from palmtop.brand import build_email_html
+
         email_html = build_email_html(body)
 
         client = self._get_client()
@@ -339,7 +343,11 @@ class EmailTool(Tool):
         return resp.json().get("message_id")
 
     async def send_email(
-        self, to: str, subject: str, body: str, html: str = "",
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        html: str = "",
     ) -> str | None:
         """Send a new email programmatically. Returns message_id on success.
 
@@ -353,6 +361,7 @@ class EmailTool(Tool):
             return None
         if not html:
             from palmtop.brand import build_email_html
+
             html = build_email_html(body)
         client = self._get_client()
         payload: dict = {"to": [to], "subject": subject, "text": body, "html": html}
@@ -409,6 +418,7 @@ def _format_message(m: dict) -> str:
         html = m.get("extracted_html") or m.get("html") or ""
         if html:
             import re
+
             body = re.sub(r"<[^>]+>", " ", html)
             body = re.sub(r"\s+", " ", body).strip()
 

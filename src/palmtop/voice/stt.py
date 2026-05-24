@@ -9,6 +9,7 @@ Telegram voice messages arrive as OGG Opus. Gemini and OpenAI accept
 OGG directly. whisper.cpp needs 16 kHz mono WAV, so ffmpeg handles
 the conversion for that path only.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -45,6 +46,7 @@ class GeminiSTT:
         self._model = model
 
         import httpx
+
         self._client = httpx.AsyncClient(timeout=60.0)
         log.info("GeminiSTT ready: model=%s", self._model)
 
@@ -57,24 +59,26 @@ class GeminiSTT:
             audio_b64 = base64.standard_b64encode(audio_bytes).decode("ascii")
 
             body = {
-                "contents": [{
-                    "parts": [
-                        {
-                            "inline_data": {
-                                "mime_type": "audio/ogg",
-                                "data": audio_b64,
-                            }
-                        },
-                        {
-                            "text": (
-                                "Transcribe this audio exactly as spoken. "
-                                "Return only the transcription, no commentary, "
-                                "no timestamps, no formatting. If the audio is "
-                                "silent or unintelligible, return an empty string."
-                            ),
-                        },
-                    ]
-                }],
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "inline_data": {
+                                    "mime_type": "audio/ogg",
+                                    "data": audio_b64,
+                                }
+                            },
+                            {
+                                "text": (
+                                    "Transcribe this audio exactly as spoken. "
+                                    "Return only the transcription, no commentary, "
+                                    "no timestamps, no formatting. If the audio is "
+                                    "silent or unintelligible, return an empty string."
+                                ),
+                            },
+                        ]
+                    }
+                ],
                 "generationConfig": {
                     "maxOutputTokens": 2048,
                     "temperature": 0.0,
@@ -126,7 +130,8 @@ class FallbackSTT:
         self._fallback = fallback
         log.info(
             "FallbackSTT: %s → %s",
-            type(primary).__name__, type(fallback).__name__,
+            type(primary).__name__,
+            type(fallback).__name__,
         )
 
     async def close(self) -> None:
@@ -162,9 +167,7 @@ class WhisperCppSTT:
                 "or build from https://github.com/ggerganov/whisper.cpp"
             )
         if not self._ffmpeg_bin:
-            raise FileNotFoundError(
-                "ffmpeg not found on PATH. Install via: pkg install ffmpeg"
-            )
+            raise FileNotFoundError("ffmpeg not found on PATH. Install via: pkg install ffmpeg")
         if not self._model.exists():
             raise FileNotFoundError(
                 f"Whisper model not found: {self._model}. Download with:\n"
@@ -177,13 +180,23 @@ class WhisperCppSTT:
         try:
             # Convert OGG → 16 kHz mono WAV
             import os
+
             wav_fd, wav_str = tempfile.mkstemp(suffix=".wav")
             wav_path = Path(wav_str)
             os.close(wav_fd)
 
             proc = await asyncio.create_subprocess_exec(
-                self._ffmpeg_bin, "-y", "-i", str(audio_path),
-                "-ar", "16000", "-ac", "1", "-f", "wav", str(wav_path),
+                self._ffmpeg_bin,
+                "-y",
+                "-i",
+                str(audio_path),
+                "-ar",
+                "16000",
+                "-ac",
+                "1",
+                "-f",
+                "wav",
+                str(wav_path),
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -195,9 +208,12 @@ class WhisperCppSTT:
             # Run whisper.cpp
             proc = await asyncio.create_subprocess_exec(
                 self._whisper_bin,
-                "-m", str(self._model),
-                "-f", str(wav_path),
-                "-t", str(self._threads),
+                "-m",
+                str(self._model),
+                "-f",
+                str(wav_path),
+                "-t",
+                str(self._threads),
                 "--no-timestamps",
                 "-np",  # no progress
                 stdout=asyncio.subprocess.PIPE,
@@ -217,7 +233,7 @@ class WhisperCppSTT:
             log.info("Transcribed %d chars from %s", len(transcript), audio_path.name)
             return transcript
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("Transcription timed out for %s", audio_path.name)
             return ""
         except Exception:
@@ -242,6 +258,7 @@ class OpenAIWhisperSTT:
         self._api_key = api_key
 
         import httpx
+
         self._client = httpx.AsyncClient(timeout=60.0)
         log.info("OpenAIWhisperSTT ready")
 

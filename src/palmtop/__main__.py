@@ -5,21 +5,21 @@ import logging
 import sys
 from pathlib import Path
 
-from palmtop.config.settings import Config, CloudTierConfig
-from palmtop.core.loop import AgentLoop
-from palmtop.persona import build_system_prompt, build_web_system_prompt
+from palmtop.config.settings import CloudTierConfig, Config
 from palmtop.core.goal_aligner import GoalAligner
 from palmtop.core.goals_paths import resolve_goals_path
+from palmtop.core.loop import AgentLoop
 from palmtop.inference.local import LocalBackend
-from palmtop.memory.conversation import ConversationMemory
-from palmtop.memory.structured import StructuredMemory
-from palmtop.memory.plans import PlanMemory
-from palmtop.tools.base import ToolRegistry
-from palmtop.tools.web_search import WebSearchTool
-from palmtop.tools.calendar import GoogleCalendarTool
-from palmtop.tools.reminders import ReminderTool
-from palmtop.tools.knowledge import KnowledgeTool
 from palmtop.knowledge.store import KnowledgeBase
+from palmtop.memory.conversation import ConversationMemory
+from palmtop.memory.plans import PlanMemory
+from palmtop.memory.structured import StructuredMemory
+from palmtop.persona import build_system_prompt, build_web_system_prompt
+from palmtop.tools.base import ToolRegistry
+from palmtop.tools.calendar import GoogleCalendarTool
+from palmtop.tools.knowledge import KnowledgeTool
+from palmtop.tools.reminders import ReminderTool
+from palmtop.tools.web_search import WebSearchTool
 
 
 def _make_cloud(tier: CloudTierConfig, label: str, log):
@@ -65,17 +65,20 @@ def main() -> None:
         log.info("No cloud API keys — running local-only")
 
     tools = ToolRegistry()
-    tools.register(WebSearchTool(
-        brave_keys=cfg.search.brave_keys,
-        serper_keys=cfg.search.serper_keys,
-        preferred_order=cfg.search.preferred_order or None,
-    ))
+    tools.register(
+        WebSearchTool(
+            brave_keys=cfg.search.brave_keys,
+            serper_keys=cfg.search.serper_keys,
+            preferred_order=cfg.search.preferred_order or None,
+        )
+    )
     tools.register(calendar)
     tools.register(reminders)
     tools.register(KnowledgeTool(kb))
 
     # --- Local file persistence ---
     from palmtop.tools.files import FileTool
+
     tools.register(FileTool(cfg.data_dir))
     log.info("File tool enabled: %s", cfg.data_dir / "docs")
 
@@ -83,6 +86,7 @@ def main() -> None:
     email_tool = None
     if cfg.email.api_key:
         from palmtop.tools.email import EmailTool
+
         email_tool = EmailTool(cfg.email.api_key, cfg.email.inbox_id)
         tools.register(email_tool)
         log.info("Email tool registered (init deferred to event loop)")
@@ -94,13 +98,13 @@ def main() -> None:
     jira_rest = None
     confluence_rest = None
     if cfg.atlassian.domain and cfg.atlassian.api_token:
-        from palmtop.tools.jira import JiraTool, ConfluenceTool
+        from palmtop.tools.jira import ConfluenceTool, JiraTool
+
         jira_rest = JiraTool(cfg.atlassian.domain, cfg.atlassian.email, cfg.atlassian.api_token)
         confluence_rest = ConfluenceTool(cfg.atlassian.domain, cfg.atlassian.email, cfg.atlassian.api_token)
     elif cfg.atlassian.domain and not cfg.atlassian.api_token:
         log.warning(
-            "Atlassian domain set (%s) but no API token — "
-            "set ATLASSIAN_API_TOKEN env var",
+            "Atlassian domain set (%s) but no API token — set ATLASSIAN_API_TOKEN env var",
             cfg.atlassian.domain,
         )
 
@@ -114,6 +118,7 @@ def main() -> None:
     if atlassian_mcp_entry:
         from palmtop.mcp.client import MCPServerConfig, check_mcp_prerequisites
         from palmtop.mcp.gateway import MCPGatewayTool
+
         prereq_error = check_mcp_prerequisites(atlassian_mcp_entry.command)
         if prereq_error:
             log.warning("MCP 'atlassian' unavailable (%s) — falling back to REST", prereq_error)
@@ -156,7 +161,7 @@ def main() -> None:
         log.info("No Atlassian config — Jira/Confluence disabled")
 
     # --- 12 Week Year MCP (Railway remote mode) ---
-    from palmtop.mcp.twelvewy import register_twelvewy, is_twelvewy_server
+    from palmtop.mcp.twelvewy import is_twelvewy_server, register_twelvewy
 
     twelvewy_prompt = register_twelvewy(cfg, tools)
 
@@ -164,14 +169,14 @@ def main() -> None:
     if cfg.mcp_servers:
         from palmtop.mcp.client import MCPServerConfig, check_mcp_prerequisites
         from palmtop.mcp.gateway import MCPGatewayTool
+
         for entry in cfg.mcp_servers:
             if not entry.command or entry.name.lower() == "atlassian":
                 continue  # already handled above
             if is_twelvewy_server(entry.name):
                 if not twelvewy_prompt:
                     log.warning(
-                        "MCP server '%s' in config.toml ignored — set [twelvewy] "
-                        "api_base_url and TWELVEWY_API_KEY",
+                        "MCP server '%s' in config.toml ignored — set [twelvewy] api_base_url and TWELVEWY_API_KEY",
                         entry.name,
                     )
                 continue
@@ -192,6 +197,7 @@ def main() -> None:
 
     # --- Observability ---
     from palmtop.core.tracing import Tracer
+
     tracer = Tracer(
         enabled=cfg.observability.enabled,
         backend=cfg.observability.backend,
@@ -215,11 +221,8 @@ def main() -> None:
 
     # Semantic judge uses the cloud LLM (if available)
     from palmtop.core.alignment_judge import SemanticAlignmentJudge
-    semantic_judge = (
-        SemanticAlignmentJudge(engine_llm)
-        if cfg.alignment.use_semantic and engine_llm
-        else None
-    )
+
+    semantic_judge = SemanticAlignmentJudge(engine_llm) if cfg.alignment.use_semantic and engine_llm else None
 
     goal_aligner = GoalAligner(
         goals_path,
@@ -235,8 +238,8 @@ def main() -> None:
         )
     sovereign = None
     if cfg.engine.enabled and engine_llm:
-        from palmtop.core.engine import PalmtopAgent
         from palmtop.core.context import ContextManager
+        from palmtop.core.engine import PalmtopAgent
 
         engine_context = ContextManager(
             structured=structured_memory,
@@ -255,8 +258,7 @@ def main() -> None:
                 autonomous=True,
             )
             log.info(
-                "Sovereign engine wired to %s (with context) — "
-                "trigger with /engine or engine: <task>",
+                "Sovereign engine wired to %s (with context) — trigger with /engine or engine: <task>",
                 cfg.persona.name,
             )
         except (ValueError, ConnectionError) as e:
@@ -267,10 +269,8 @@ def main() -> None:
 
     # --- Blessing gate (engine + cursor + deploy tools share human approval) ---
     from palmtop.core.blessing import BlessingGate
-    deploy_enabled = (
-        (cfg.vercel.enabled and cfg.vercel.api_token)
-        or (cfg.railway.enabled and cfg.railway.api_token)
-    )
+
+    deploy_enabled = (cfg.vercel.enabled and cfg.vercel.api_token) or (cfg.railway.enabled and cfg.railway.api_token)
     blessing_gate = BlessingGate() if (sovereign or cfg.cursor.enabled or deploy_enabled) else None
 
     # --- Cursor Cloud Agents bridge ---
@@ -368,7 +368,14 @@ def main() -> None:
         )
         for i, r in enumerate(results):
             if isinstance(r, Exception):
-                names = ["conversations", "structured", "plans", "calendar", "reminders", "knowledge"]
+                names = [
+                    "conversations",
+                    "structured",
+                    "plans",
+                    "calendar",
+                    "reminders",
+                    "knowledge",
+                ]
                 log.warning("Store init failed (%s): %s", names[i], r)
 
         # Phase 2: API auth checks in parallel (all independent)
@@ -396,7 +403,10 @@ def main() -> None:
                     # verify_auth returns error string or None
                     log.warning("%s auth issue: %s", label, result)
                 elif label == "email":
-                    log.info("Email tool ready: %s", email_tool._email_address or "(resolves on first use)")
+                    log.info(
+                        "Email tool ready: %s",
+                        email_tool._email_address or "(resolves on first use)",
+                    )
 
         log.info("Async startup complete — all stores initialized")
 
@@ -408,16 +418,14 @@ def main() -> None:
         try:
             from palmtop.channels.telegram import TelegramChannel
         except ImportError:
-            log.error(
-                "Telegram channel requires python-telegram-bot. "
-                "On the S21 run: uv sync --extra telegram"
-            )
+            log.error("Telegram channel requires python-telegram-bot. On the S21 run: uv sync --extra telegram")
             raise SystemExit(1) from None
 
         # --- Voice (STT + TTS) ---
         stt, tts = None, None
         if cfg.voice.enabled:
             from palmtop.voice.stt import create_stt
+
             stt = create_stt(cfg.voice)
             if stt:
                 log.info("Voice STT enabled: %s", type(stt).__name__)
@@ -426,6 +434,7 @@ def main() -> None:
 
             if cfg.voice.tts_enabled:
                 from palmtop.voice.tts import create_tts
+
                 tts = create_tts(cfg.voice)
                 if tts:
                     log.info("Voice TTS enabled: %s", type(tts).__name__)
@@ -465,6 +474,7 @@ def main() -> None:
             reminders.start_background_check()
             if cfg.digest.enabled and cfg.telegram.allowed_users:
                 from palmtop.core.digest import DigestService
+
                 digest = DigestService(
                     send_fn=channel.send_message,
                     user_ids=[str(uid) for uid in cfg.telegram.allowed_users],
@@ -481,6 +491,7 @@ def main() -> None:
             # --- Proactive monitor ---
             if cfg.monitor.enabled and cfg.telegram.allowed_users:
                 from palmtop.core.monitor import MonitorService
+
                 # Find jira/atlassian tool if registered
                 jira_tool = tools.get("atlassian") or tools.get("jira")
                 email_tool_ref = tools.get("email")
@@ -489,6 +500,7 @@ def main() -> None:
                 jira_cursor_bridge = None
                 if cursor_manager and jira_tool:
                     from palmtop.cursor.jira_bridge import JiraCursorBridge
+
                     jira_cursor_bridge = JiraCursorBridge(
                         jira_tool,
                         cursor_manager,
@@ -514,10 +526,9 @@ def main() -> None:
                 log.info("Proactive monitor enabled")
 
             # --- SMS listener (dual-channel, runs alongside Telegram) ---
-            if cfg.sms.enabled and (
-                cfg.sms.allowed_numbers or cfg.sms.allowed_sender_names
-            ):
+            if cfg.sms.enabled and (cfg.sms.allowed_numbers or cfg.sms.allowed_sender_names):
                 from palmtop.channels.sms_listener import SmsListener
+
                 sms_listener = SmsListener(
                     agent,
                     allowed_numbers=cfg.sms.allowed_numbers,
@@ -536,8 +547,8 @@ def main() -> None:
                 web_llm = light or heavy
                 if web_llm:
                     from palmtop.web.agent import WebAgent
-                    from palmtop.web.ratelimit import RateLimiter
                     from palmtop.web.app import create_app
+                    from palmtop.web.ratelimit import RateLimiter
 
                     web_agent = WebAgent(
                         web_llm,
@@ -555,6 +566,7 @@ def main() -> None:
                     lead_outreach = None
                     if email_tool:
                         from palmtop.web.outreach import LeadOutreach
+
                         lead_outreach = LeadOutreach(
                             llm=web_llm,
                             email_tool=email_tool,
@@ -575,6 +587,7 @@ def main() -> None:
                     )
 
                     import uvicorn
+
                     uvi_config = uvicorn.Config(
                         web_app,
                         host=cfg.web.host,
@@ -586,7 +599,8 @@ def main() -> None:
                     asyncio.create_task(uvi_server.serve())
                     log.info(
                         "Web channel started on %s:%d (sandboxed — no internal access)",
-                        cfg.web.host, cfg.web.port,
+                        cfg.web.host,
+                        cfg.web.port,
                     )
                 else:
                     log.warning("Web channel enabled but no cloud LLM available — disabled")

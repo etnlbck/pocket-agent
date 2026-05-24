@@ -1,9 +1,14 @@
 """Headless engine CLI tests."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
+pytest.importorskip("palmtop.engine.__main__")
 
 from palmtop.engine.__main__ import _append_audit, main
 

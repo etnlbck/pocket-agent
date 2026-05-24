@@ -87,15 +87,17 @@ def build_cursor_prompt(issue: dict) -> str:
         parts.append(acceptance[:1000])
         parts.append("")
 
-    parts.extend([
-        "Instructions:",
-        "- Read the codebase to understand the relevant files",
-        "- Implement the changes described above",
-        "- Follow existing code style and conventions",
-        "- Add or update tests if applicable",
-        f"- Reference {key} in your commit messages",
-        f"- Create a PR with a clear description linking to {key}",
-    ])
+    parts.extend(
+        [
+            "Instructions:",
+            "- Read the codebase to understand the relevant files",
+            "- Implement the changes described above",
+            "- Follow existing code style and conventions",
+            "- Add or update tests if applicable",
+            f"- Reference {key} in your commit messages",
+            f"- Create a PR with a clear description linking to {key}",
+        ]
+    )
 
     return "\n".join(parts)
 
@@ -111,7 +113,7 @@ class JiraCursorBridge:
     def __init__(
         self,
         jira_tool,
-        cursor_manager: "CursorJobManager",
+        cursor_manager: CursorJobManager,
         *,
         send_fn=None,
         user_id: str = "default",
@@ -152,11 +154,7 @@ class JiraCursorBridge:
         # Notify user
         if self._send_fn:
             try:
-                msg = (
-                    f"🤖 Auto-delegated **{issue_key}** to Cursor\n"
-                    f"_{issue.get('summary', '')}_\n\n"
-                    f"{result}"
-                )
+                msg = f"🤖 Auto-delegated **{issue_key}** to Cursor\n_{issue.get('summary', '')}_\n\n{result}"
                 await self._send_fn(self._user_id, msg)
             except Exception:
                 log.warning("Failed to notify about auto-delegation of %s", issue_key)

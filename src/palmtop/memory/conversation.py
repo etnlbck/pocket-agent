@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import aiosqlite
 import logging
 from pathlib import Path
+
+import aiosqlite
 
 from palmtop.inference.base import Message
 
@@ -144,7 +145,10 @@ class ConversationMemory:
         self._msg_count_since_summary[user_id] = 0
         log.info(
             "Stored conversation summary for %s (msgs %d–%d, %d chars)",
-            user_id, msg_id_start, msg_id_end, len(summary),
+            user_id,
+            msg_id_start,
+            msg_id_end,
+            len(summary),
         )
 
     async def get_history(self, user_id: str, limit: int = MAX_HISTORY) -> list[Message]:
@@ -169,14 +173,18 @@ class ConversationMemory:
         summary_rows = await cursor.fetchall()
         if summary_rows:
             combined = "\n\n".join(r[0] for r in summary_rows)
-            messages.append(Message(
-                role="user",
-                content=f"[Previous conversation context]\n{combined}\n[End of context — recent messages follow]",
-            ))
-            messages.append(Message(
-                role="assistant",
-                content="Understood — I have context from our earlier conversation. Continuing.",
-            ))
+            messages.append(
+                Message(
+                    role="user",
+                    content=f"[Previous conversation context]\n{combined}\n[End of context — recent messages follow]",
+                )
+            )
+            messages.append(
+                Message(
+                    role="assistant",
+                    content="Understood — I have context from our earlier conversation. Continuing.",
+                )
+            )
 
         # Load recent raw messages
         cursor = await self._db.execute(

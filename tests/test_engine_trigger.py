@@ -1,15 +1,18 @@
 """the agent → sovereign engine trigger tests."""
+
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from palmtop.core.loop import AgentLoop
+pytest.importorskip("palmtop.core.loop")
+
 from palmtop.core.orchestration import OrchestrationResult
 from palmtop.core.sovereign_runner import parse_engine_task, run_sovereign_engine
+
+from palmtop.core.loop import AgentLoop
 
 
 def test_parse_engine_task_prefixes() -> None:
@@ -53,8 +56,6 @@ async def test_run_sovereign_engine_blocked(tmp_path: Path) -> None:
             alignment={"is_aligned": False, "score": 0, "method": "heuristic"},
         )
     )
-    reply = await run_sovereign_engine(
-        sovereign, "random task", data_dir=tmp_path, user_id="u1"
-    )
+    reply = await run_sovereign_engine(sovereign, "random task", data_dir=tmp_path, user_id="u1")
     assert "BLOCKED" in reply
     assert (tmp_path / "engine_runs.jsonl").is_file()

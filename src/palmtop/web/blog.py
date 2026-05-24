@@ -12,7 +12,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
 
 from palmtop.persona import PersonaConfig
 
@@ -20,6 +19,7 @@ POSTS_DIR = Path(__file__).parent / "static" / "blog" / "posts"
 
 
 # ── Frontmatter parser ──────────────────────────────────────────────
+
 
 def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """Parse --- delimited frontmatter. Returns (meta dict, body)."""
@@ -29,7 +29,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     if end == -1:
         return {}, text
     raw = text[3:end].strip()
-    body = text[end + 3:].strip()
+    body = text[end + 3 :].strip()
     meta: dict[str, str] = {}
     for line in raw.splitlines():
         if ":" in line:
@@ -39,6 +39,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
 
 
 # ── Minimal markdown → HTML ─────────────────────────────────────────
+
 
 def _md_to_html(md: str) -> str:
     """Convert a subset of markdown to HTML. No dependencies."""
@@ -171,6 +172,7 @@ def _inline(text: str) -> str:
 
 # ── Post data model ─────────────────────────────────────────────────
 
+
 @dataclass
 class BlogPost:
     slug: str
@@ -202,7 +204,7 @@ class BlogPost:
 def load_post(
     slug: str,
     persona: PersonaConfig | None = None,
-) -> Optional[BlogPost]:
+) -> BlogPost | None:
     """Load a single post by slug."""
     p = persona or PersonaConfig()
     base = f"https://{p.domain}" if p.domain else ""
@@ -230,7 +232,7 @@ def load_post(
     )
 
 
-def list_posts(persona: PersonaConfig | None = None) -> List[BlogPost]:
+def list_posts(persona: PersonaConfig | None = None) -> list[BlogPost]:
     """List all published posts, newest first."""
     posts = []
     if not POSTS_DIR.exists():
@@ -245,6 +247,7 @@ def list_posts(persona: PersonaConfig | None = None) -> List[BlogPost]:
 
 
 # ── HTML templates ──────────────────────────────────────────────────
+
 
 def _head_index(
     title: str,
@@ -330,9 +333,7 @@ def _head_article(post: BlogPost, persona: PersonaConfig) -> str:
 
 def _article_tags_meta(tags: list[str]) -> str:
     """Generate article:tag meta tags."""
-    return "\n  ".join(
-        f'<meta property="article:tag" content="{t}">' for t in tags
-    )
+    return "\n  ".join(f'<meta property="article:tag" content="{t}">' for t in tags)
 
 
 def _nav_html(persona: PersonaConfig) -> str:
@@ -340,8 +341,7 @@ def _nav_html(persona: PersonaConfig) -> str:
     linkedin = ""
     if persona.linkedin_url:
         linkedin = (
-            f'      <a href="{persona.linkedin_url}" target="_blank" '
-            f'rel="noopener" class="nav-link">LinkedIn</a>'
+            f'      <a href="{persona.linkedin_url}" target="_blank" rel="noopener" class="nav-link">LinkedIn</a>'
         )
 
     return f"""\
@@ -382,9 +382,9 @@ def render_post_page(
 
     tags_html = ""
     if post.tags:
-        tags_html = '<div class="post-tags">' + "".join(
-            f'<span class="post-tag">{t}</span>' for t in post.tags
-        ) + "</div>"
+        tags_html = (
+            '<div class="post-tags">' + "".join(f'<span class="post-tag">{t}</span>' for t in post.tags) + "</div>"
+        )
 
     return f"""{head}
 <body>
@@ -394,7 +394,7 @@ def render_post_page(
     <header class="post-header">
       <time class="post-date">{post.date}</time>
       <h1>{post.title}</h1>
-      {f'<p class="post-description">{post.description}</p>' if post.description else ''}
+      {f'<p class="post-description">{post.description}</p>' if post.description else ""}
       {tags_html}
     </header>
     <div class="post-body">
@@ -411,7 +411,7 @@ def render_post_page(
 
 
 def render_blog_index(
-    posts: List[BlogPost],
+    posts: list[BlogPost],
     persona: PersonaConfig | None = None,
 ) -> str:
     """Render the blog listing page."""
@@ -432,9 +432,11 @@ def render_blog_index(
         for post in posts:
             tags_html = ""
             if post.tags:
-                tags_html = '<div class="post-tags">' + "".join(
-                    f'<span class="post-tag">{t}</span>' for t in post.tags
-                ) + "</div>"
+                tags_html = (
+                    '<div class="post-tags">'
+                    + "".join(f'<span class="post-tag">{t}</span>' for t in post.tags)
+                    + "</div>"
+                )
             cards.append(f"""\
     <a href="{post.url}" class="post-card">
       <time class="post-date">{post.date}</time>

@@ -56,7 +56,13 @@ async def test_list_deployments(cfg: RailwayConfig) -> None:
         gql.return_value = {
             "deployments": {
                 "edges": [
-                    {"node": {"id": "dep-1", "status": "SUCCESS", "url": "https://x.up.railway.app"}},
+                    {
+                        "node": {
+                            "id": "dep-1",
+                            "status": "SUCCESS",
+                            "url": "https://x.up.railway.app",
+                        }
+                    },
                 ]
             }
         }

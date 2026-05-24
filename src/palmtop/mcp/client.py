@@ -14,6 +14,7 @@ Usage:
     tools = client.get_tools()  # list[Tool] ready for ToolRegistry
     await client.close()
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -44,10 +45,11 @@ def check_mcp_prerequisites(command: list[str]) -> str | None:
 @dataclass
 class MCPServerConfig:
     """Configuration for a single MCP server connection."""
-    name: str                           # display name, e.g. "atlassian"
-    command: list[str]                  # e.g. ["npx", "@anthropic/atlassian-mcp"]
+
+    name: str  # display name, e.g. "atlassian"
+    command: list[str]  # e.g. ["npx", "@anthropic/atlassian-mcp"]
     env: dict[str, str] = field(default_factory=dict)  # extra env vars
-    cwd: str | None = None              # working directory for the subprocess
+    cwd: str | None = None  # working directory for the subprocess
 
 
 class MCPClient:
@@ -85,6 +87,7 @@ class MCPClient:
 
         import os
         import sys
+
         env = {**os.environ, **self._config.env}
 
         # Replace bare "python" with sys.executable so the subprocess uses
@@ -105,13 +108,9 @@ class MCPClient:
                 cwd=cwd,
             )
         except FileNotFoundError:
-            raise RuntimeError(
-                f"MCP '{self._config.name}': command not found: {self._config.command[0]}"
-            )
+            raise RuntimeError(f"MCP '{self._config.name}': command not found: {self._config.command[0]}")
         except PermissionError:
-            raise RuntimeError(
-                f"MCP '{self._config.name}': permission denied running: {self._config.command[0]}"
-            )
+            raise RuntimeError(f"MCP '{self._config.name}': permission denied running: {self._config.command[0]}")
 
         # Check if process died immediately (bad command, missing package, etc.)
         await asyncio.sleep(0.5)
@@ -129,11 +128,15 @@ class MCPClient:
 
         # Initialize handshake — longer timeout for first run (uvx downloads packages)
         try:
-            init_result = await self._request("initialize", {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "palmtop", "version": "0.1.0"},
-            }, timeout=90.0)
+            init_result = await self._request(
+                "initialize",
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "palmtop", "version": "0.1.0"},
+                },
+                timeout=90.0,
+            )
         except (TimeoutError, RuntimeError) as e:
             await self._kill_process()
             raise RuntimeError(f"MCP '{self._config.name}' handshake failed: {e}")
@@ -152,10 +155,13 @@ class MCPClient:
     async def call_tool(self, tool_name: str, arguments: dict) -> str:
         """Call an MCP tool and return the text result."""
         await self.ensure_connected()
-        result = await self._request("tools/call", {
-            "name": tool_name,
-            "arguments": arguments,
-        })
+        result = await self._request(
+            "tools/call",
+            {
+                "name": tool_name,
+                "arguments": arguments,
+            },
+        )
 
         # Extract text from content array
         content = result.get("content", [])
@@ -206,7 +212,7 @@ class MCPClient:
         try:
             result = await asyncio.wait_for(future, timeout=timeout)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._pending.pop(rid, None)
             raise TimeoutError(f"MCP {self._config.name}: timeout on {method}")
 
@@ -241,9 +247,7 @@ class MCPClient:
                 if rid is not None and rid in self._pending:
                     future = self._pending.pop(rid)
                     if "error" in msg:
-                        future.set_exception(
-                            RuntimeError(f"MCP error: {msg['error'].get('message', msg['error'])}")
-                        )
+                        future.set_exception(RuntimeError(f"MCP error: {msg['error'].get('message', msg['error'])}"))
                     else:
                         future.set_result(msg.get("result", {}))
         except asyncio.CancelledError:
@@ -346,10 +350,7 @@ class MCPToolBridge(Tool):
         required = self._schema.get("required", [])
 
         # If schema has a single required string param, use the query directly
-        string_params = [
-            k for k, v in props.items()
-            if v.get("type") == "string" and k in required
-        ]
+        string_params = [k for k, v in props.items() if v.get("type") == "string" and k in required]
         if len(string_params) == 1:
             return {string_params[0]: query}
 

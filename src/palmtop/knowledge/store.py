@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import aiosqlite
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+import aiosqlite
 
 log = logging.getLogger(__name__)
 
@@ -144,8 +145,13 @@ class KnowledgeBase:
         rows = await cursor.fetchall()
         return [KBEntry(*r) for r in rows]
 
-    async def update(self, entry_id: int, title: str | None = None,
-                     content: str | None = None, tags: str | None = None) -> bool:
+    async def update(
+        self,
+        entry_id: int,
+        title: str | None = None,
+        content: str | None = None,
+        tags: str | None = None,
+    ) -> bool:
         entry = await self.get(entry_id)
         if not entry:
             return False

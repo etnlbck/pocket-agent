@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 import httpx
 
@@ -31,9 +32,9 @@ class VercelDeployTool(Tool):
 
     def __init__(
         self,
-        cfg: "VercelConfig",
+        cfg: VercelConfig,
         *,
-        blessing_gate: "BlessingGate | None" = None,
+        blessing_gate: BlessingGate | None = None,
     ) -> None:
         self._cfg = cfg
         self._blessing_gate = blessing_gate

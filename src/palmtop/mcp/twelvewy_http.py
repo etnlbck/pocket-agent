@@ -1,4 +1,5 @@
 """HTTP client for 12WY remote mode (palmtop → Railway API)."""
+
 from __future__ import annotations
 
 import json
@@ -27,12 +28,7 @@ def _base_url() -> str:
 
 
 def _api_key() -> str:
-    key = (
-        _override_key
-        or os.environ.get("TWELVEWY_API_KEY")
-        or os.environ.get("AGENT_API_KEY")
-        or ""
-    ).strip()
+    key = (_override_key or os.environ.get("TWELVEWY_API_KEY") or os.environ.get("AGENT_API_KEY") or "").strip()
     if not key:
         raise ValueError("Set TWELVEWY_API_KEY (or AGENT_API_KEY)")
     return key

@@ -8,6 +8,7 @@ Handles:
   - Fallback to a secondary backend (e.g. heavy → light)
   - Context truncation on token limit errors
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -50,10 +51,7 @@ class CloudLLMAdapter:
         user_body = task
         if alignment:
             tags = ", ".join(alignment.get("matched_tags") or []) or "none"
-            user_body = (
-                f"{task}\n\n[12WY alignment score: {alignment.get('score', 0)} | "
-                f"tags: {tags}]"
-            )
+            user_body = f"{task}\n\n[12WY alignment score: {alignment.get('score', 0)} | tags: {tags}]"
         messages = [
             Message(role="system", content=ENGINE_SYSTEM_CONTEXT),
             Message(role="user", content=user_body),
@@ -62,16 +60,17 @@ class CloudLLMAdapter:
         last_error: Exception | None = None
         for attempt in range(_MAX_RETRIES):
             try:
-                return self._run_async(
-                    self._backend.complete(messages, max_tokens=2048)
-                )
+                return self._run_async(self._backend.complete(messages, max_tokens=2048))
             except (ConnectionError, TimeoutError, OSError) as e:
                 last_error = e
                 if attempt < _MAX_RETRIES - 1:
                     delay = _RETRY_DELAYS[attempt]
                     log.warning(
                         "Engine LLM attempt %d/%d failed (%s), retrying in %ds",
-                        attempt + 1, _MAX_RETRIES, e, delay,
+                        attempt + 1,
+                        _MAX_RETRIES,
+                        e,
+                        delay,
                     )
                     time.sleep(delay)
                     continue
@@ -92,12 +91,11 @@ class CloudLLMAdapter:
         if self._fallback and last_error:
             log.warning(
                 "Primary LLM failed after %d attempts, trying fallback: %s",
-                _MAX_RETRIES, last_error,
+                _MAX_RETRIES,
+                last_error,
             )
             try:
-                return self._run_async(
-                    self._fallback.complete(messages, max_tokens=2048)
-                )
+                return self._run_async(self._fallback.complete(messages, max_tokens=2048))
             except Exception as fallback_err:
                 log.error("Fallback LLM also failed: %s", fallback_err)
                 raise last_error from fallback_err
@@ -108,6 +106,7 @@ class CloudLLMAdapter:
 
     def complete(self, messages: list[dict[str, str]]) -> str:
         from palmtop.inference.base import Message
+
         msgs = [Message(role=m["role"], content=m["content"]) for m in messages]
         return self._run_async(self._backend.complete(msgs, max_tokens=2048))
 
@@ -120,6 +119,7 @@ class CloudLLMAdapter:
 
         if loop and loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 return pool.submit(asyncio.run, coro).result(timeout=120)
         return asyncio.run(coro)

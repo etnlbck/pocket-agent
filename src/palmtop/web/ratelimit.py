@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import defaultdict
 from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
@@ -17,9 +16,10 @@ log = logging.getLogger(__name__)
 @dataclass
 class _Bucket:
     """Token bucket for a single key (IP or session)."""
+
     tokens: float
     last_refill: float
-    rate: float      # tokens per second
+    rate: float  # tokens per second
     capacity: float  # max tokens
 
 
@@ -58,7 +58,8 @@ class RateLimiter:
         # Per-minute check
         minute_key = f"chat:min:{key}"
         if not self._check_bucket(
-            minute_key, self._minute_buckets,
+            minute_key,
+            self._minute_buckets,
             rate=self._chat_rpm / 60.0,
             capacity=self._chat_rpm,
             now=now,
@@ -69,7 +70,8 @@ class RateLimiter:
         # Per-day check
         day_key = f"chat:day:{key}"
         if not self._check_bucket(
-            day_key, self._day_buckets,
+            day_key,
+            self._day_buckets,
             rate=self._chat_rpd / 86400.0,
             capacity=self._chat_rpd,
             now=now,
@@ -85,7 +87,8 @@ class RateLimiter:
 
         minute_key = f"form:min:{key}"
         if not self._check_bucket(
-            minute_key, self._minute_buckets,
+            minute_key,
+            self._minute_buckets,
             rate=self._form_rpm / 60.0,
             capacity=self._form_rpm,
             now=now,
@@ -95,7 +98,8 @@ class RateLimiter:
 
         day_key = f"form:day:{key}"
         if not self._check_bucket(
-            day_key, self._day_buckets,
+            day_key,
+            self._day_buckets,
             rate=self._form_rpd / 86400.0,
             capacity=self._form_rpd,
             now=now,

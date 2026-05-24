@@ -19,6 +19,7 @@ Env vars:
     CONFLUENCE_USERNAME — usually same as JIRA_USERNAME
     CONFLUENCE_API_TOKEN — usually same as JIRA_API_TOKEN
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -65,7 +66,11 @@ TOOLS = [
             "properties": {
                 "project": {"type": "string", "description": "Project key, e.g. PROJ"},
                 "summary": {"type": "string", "description": "Issue summary"},
-                "description": {"type": "string", "description": "Issue description", "default": ""},
+                "description": {
+                    "type": "string",
+                    "description": "Issue description",
+                    "default": "",
+                },
                 "issuetype": {"type": "string", "description": "Issue type", "default": "Task"},
             },
             "required": ["project", "summary"],
@@ -121,7 +126,11 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "pageId": {"type": "string", "description": "Page ID (numeric) or title"},
-                "space": {"type": "string", "description": "Space key (required if using title)", "default": ""},
+                "space": {
+                    "type": "string",
+                    "description": "Space key (required if using title)",
+                    "default": "",
+                },
             },
             "required": ["pageId"],
         },
@@ -142,8 +151,15 @@ TOOLS = [
             "properties": {
                 "space": {"type": "string", "description": "Space key, e.g. JB"},
                 "title": {"type": "string", "description": "Page title"},
-                "body": {"type": "string", "description": "Page content in Confluence storage format (XHTML). Use <p>, <h1>-<h6>, <ul>/<li>, <table>, <ac:structured-macro> etc."},
-                "parentId": {"type": "string", "description": "Parent page ID (optional — omit for top-level page)", "default": ""},
+                "body": {
+                    "type": "string",
+                    "description": "Page content in Confluence storage format (XHTML). Use <p>, <h1>-<h6>, <ul>/<li>, <table>, <ac:structured-macro> etc.",
+                },
+                "parentId": {
+                    "type": "string",
+                    "description": "Parent page ID (optional — omit for top-level page)",
+                    "default": "",
+                },
             },
             "required": ["space", "title", "body"],
         },
@@ -155,9 +171,19 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "pageId": {"type": "string", "description": "Page ID (numeric)"},
-                "title": {"type": "string", "description": "New page title (required — pass existing title if unchanged)"},
-                "body": {"type": "string", "description": "New page content in Confluence storage format (XHTML)"},
-                "minorEdit": {"type": "boolean", "description": "If true, marks as minor edit (no notification)", "default": False},
+                "title": {
+                    "type": "string",
+                    "description": "New page title (required — pass existing title if unchanged)",
+                },
+                "body": {
+                    "type": "string",
+                    "description": "New page content in Confluence storage format (XHTML)",
+                },
+                "minorEdit": {
+                    "type": "boolean",
+                    "description": "If true, marks as minor edit (no notification)",
+                    "default": False,
+                },
             },
             "required": ["pageId", "title", "body"],
         },
@@ -200,7 +226,7 @@ class AtlassianMCPServer:
 
     def _init_clients(self) -> None:
         try:
-            from atlassian import Jira, Confluence  # noqa: F811
+            from atlassian import Confluence, Jira  # noqa: F811
         except ImportError:
             log.error(
                 "atlassian-python-api is not installed. "
@@ -229,7 +255,15 @@ class AtlassianMCPServer:
                 log.error("Jira auth FAILED — check credentials: %s", e)
                 self._jira = None
         else:
-            missing = [k for k, v in [("JIRA_URL", jira_url), ("JIRA_USERNAME", jira_user), ("JIRA_API_TOKEN", jira_token)] if not v]
+            missing = [
+                k
+                for k, v in [
+                    ("JIRA_URL", jira_url),
+                    ("JIRA_USERNAME", jira_user),
+                    ("JIRA_API_TOKEN", jira_token),
+                ]
+                if not v
+            ]
             log.warning("Jira not configured (missing: %s)", ", ".join(missing))
 
         if conf_url and conf_user and conf_token:
@@ -245,7 +279,15 @@ class AtlassianMCPServer:
                 log.error("Confluence auth FAILED — check credentials: %s", e)
                 self._confluence = None
         else:
-            missing = [k for k, v in [("CONFLUENCE_URL", conf_url), ("CONFLUENCE_USERNAME", conf_user), ("CONFLUENCE_API_TOKEN", conf_token)] if not v]
+            missing = [
+                k
+                for k, v in [
+                    ("CONFLUENCE_URL", conf_url),
+                    ("CONFLUENCE_USERNAME", conf_user),
+                    ("CONFLUENCE_API_TOKEN", conf_token),
+                ]
+                if not v
+            ]
             log.warning("Confluence not configured (missing: %s)", ", ".join(missing))
 
     async def handle(self, request: dict) -> dict | None:
@@ -254,11 +296,14 @@ class AtlassianMCPServer:
         params = request.get("params", {})
 
         if method == "initialize":
-            return _jsonrpc_response(rid, {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {"tools": {}},
-                "serverInfo": SERVER_INFO,
-            })
+            return _jsonrpc_response(
+                rid,
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}},
+                    "serverInfo": SERVER_INFO,
+                },
+            )
 
         elif method == "notifications/initialized":
             return None
@@ -277,9 +322,7 @@ class AtlassianMCPServer:
             tool_name = params.get("name", "")
             args = params.get("arguments", {})
             try:
-                result = await asyncio.get_event_loop().run_in_executor(
-                    None, self._call_tool, tool_name, args
-                )
+                result = await asyncio.get_event_loop().run_in_executor(None, self._call_tool, tool_name, args)
                 return _jsonrpc_response(rid, _text_result(result))
             except Exception as e:
                 log.exception("Tool %s failed", tool_name)
@@ -372,11 +415,33 @@ class AtlassianMCPServer:
 
     # Valid JQL field names — if the query starts with one, treat as raw JQL
     _JQL_FIELDS = {
-        "assignee", "reporter", "creator", "project", "status", "type",
-        "issuetype", "priority", "resolution", "summary", "description",
-        "text", "labels", "component", "fixversion", "affectedversion",
-        "sprint", "created", "updated", "due", "resolved", "key",
-        "issuekey", "id", "filter", "watchers", "voter",
+        "assignee",
+        "reporter",
+        "creator",
+        "project",
+        "status",
+        "type",
+        "issuetype",
+        "priority",
+        "resolution",
+        "summary",
+        "description",
+        "text",
+        "labels",
+        "component",
+        "fixversion",
+        "affectedversion",
+        "sprint",
+        "created",
+        "updated",
+        "due",
+        "resolved",
+        "key",
+        "issuekey",
+        "id",
+        "filter",
+        "watchers",
+        "voter",
     }
 
     def _to_jql(self, raw: str) -> str:
@@ -388,7 +453,7 @@ class AtlassianMCPServer:
         # Strip common prefixes the gateway/LLM might prepend
         for prefix in ("search ", "find ", "look up ", "jira ", "search for "):
             if raw.lower().startswith(prefix):
-                raw = raw[len(prefix):].strip()
+                raw = raw[len(prefix) :].strip()
                 break
 
         # Check if it looks like real JQL: first token is a known field name
@@ -406,9 +471,20 @@ class AtlassianMCPServer:
         return f'text ~ "{clean}" ORDER BY updated DESC'
 
     _CQL_FIELDS = {
-        "text", "title", "type", "space", "label", "ancestor",
-        "parent", "creator", "contributor", "macro", "content",
-        "id", "lastmodified", "created",
+        "text",
+        "title",
+        "type",
+        "space",
+        "label",
+        "ancestor",
+        "parent",
+        "creator",
+        "contributor",
+        "macro",
+        "content",
+        "id",
+        "lastmodified",
+        "created",
     }
 
     def _to_cql(self, raw: str) -> str:
@@ -419,7 +495,7 @@ class AtlassianMCPServer:
 
         for prefix in ("search ", "find ", "look up ", "confluence ", "search for "):
             if raw.lower().startswith(prefix):
-                raw = raw[len(prefix):].strip()
+                raw = raw[len(prefix) :].strip()
                 break
 
         first_token = raw.split()[0].lower().rstrip("=<>!~")
@@ -437,6 +513,7 @@ class AtlassianMCPServer:
     def _strip_jql_noise(text: str) -> str:
         """Remove JQL syntax artifacts to extract the search intent."""
         import re
+
         # Remove operators, quotes, parens
         text = re.sub(r'[=~<>!()"]', " ", text)
         # Remove JQL keywords
@@ -506,7 +583,8 @@ class AtlassianMCPServer:
             if not isinstance(desc, str):
                 desc = str(desc)
             fields["description"] = {
-                "type": "doc", "version": 1,
+                "type": "doc",
+                "version": 1,
                 "content": [{"type": "paragraph", "content": [{"type": "text", "text": desc}]}],
             }
         labels = args.get("labels")

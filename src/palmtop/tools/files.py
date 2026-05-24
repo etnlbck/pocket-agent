@@ -5,10 +5,10 @@ search, and delete documents. Sandboxed to the docs directory.
 
 Allowed extensions: .md, .txt, .py, .json, .csv, .toml, .yaml, .yml
 """
+
 from __future__ import annotations
 
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -18,7 +18,14 @@ from palmtop.tools.base import Tool
 log = logging.getLogger(__name__)
 
 _ALLOWED_EXTENSIONS = {
-    ".md", ".txt", ".py", ".json", ".csv", ".toml", ".yaml", ".yml",
+    ".md",
+    ".txt",
+    ".py",
+    ".json",
+    ".csv",
+    ".toml",
+    ".yaml",
+    ".yml",
 }
 
 # Max file size the agent can write (64 KB — plenty for docs, safe for memory)
@@ -270,7 +277,7 @@ class FileTool(Tool):
         if not self._root.exists():
             return "No documents yet."
 
-        lines = [f"docs/"]
+        lines = ["docs/"]
         self._tree_walk(self._root, lines, prefix="")
 
         if len(lines) == 1:
@@ -280,13 +287,10 @@ class FileTool(Tool):
 
     def _tree_walk(self, directory: Path, lines: list[str], prefix: str) -> None:
         entries = sorted(directory.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
-        visible = [
-            e for e in entries
-            if e.is_dir() or (e.is_file() and e.suffix.lower() in _ALLOWED_EXTENSIONS)
-        ]
+        visible = [e for e in entries if e.is_dir() or (e.is_file() and e.suffix.lower() in _ALLOWED_EXTENSIONS)]
 
         for i, entry in enumerate(visible):
-            is_last = (i == len(visible) - 1)
+            is_last = i == len(visible) - 1
             connector = "└── " if is_last else "├── "
             child_prefix = "    " if is_last else "│   "
 

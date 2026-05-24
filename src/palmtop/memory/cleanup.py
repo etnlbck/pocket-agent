@@ -14,6 +14,7 @@ Usage:
 
     # default: looks for ./data/memories.db
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -61,9 +62,7 @@ POISON_PATTERNS = [
 def find_poisoned(db_path: Path) -> list[tuple[int, str, str]]:
     """Return (id, category, content) for all poisoned memories."""
     conn = sqlite3.connect(db_path)
-    cursor = conn.execute(
-        "SELECT id, category, content FROM memories ORDER BY id"
-    )
+    cursor = conn.execute("SELECT id, category, content FROM memories ORDER BY id")
     poisoned = []
     for row_id, cat, content in cursor:
         content_lower = content.lower()

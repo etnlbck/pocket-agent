@@ -75,7 +75,9 @@ class JiraTool(Tool):
     async def run(self, query: str) -> str:
         parts = query.strip().split(None, 1)
         if not parts:
-            return "Usage: search <query> | get <key> | create <proj>|<summary>|<desc> | comment <key>|<text> | my issues"
+            return (
+                "Usage: search <query> | get <key> | create <proj>|<summary>|<desc> | comment <key>|<text> | my issues"
+            )
 
         action = parts[0].lower()
         rest = parts[1] if len(parts) > 1 else ""
@@ -111,7 +113,11 @@ class JiraTool(Tool):
         client = self._get_client()
         resp = await client.get(
             f"{self._base_url}/search",
-            params={"jql": jql, "maxResults": 10, "fields": "summary,status,assignee,priority,updated"},
+            params={
+                "jql": jql,
+                "maxResults": 10,
+                "fields": "summary,status,assignee,priority,updated",
+            },
         )
         if resp.status_code != 200:
             return f"Jira search failed ({resp.status_code}): {resp.text[:200]}"
@@ -164,7 +170,9 @@ class JiraTool(Tool):
             lines.append(f"\nRecent comments ({len(comments)}):")
             for c in comments[-3:]:
                 author = c.get("author", {}).get("displayName", "?")
-                body = _extract_adf_text(c.get("body", {})) if isinstance(c.get("body"), dict) else str(c.get("body", ""))
+                body = (
+                    _extract_adf_text(c.get("body", {})) if isinstance(c.get("body"), dict) else str(c.get("body", ""))
+                )
                 lines.append(f"  {author}: {body[:150]}")
 
         return "\n".join(lines)
@@ -423,15 +431,22 @@ def _extract_project_key(text: str) -> str:
     Returns the uppercase key or empty string if none found.
     """
     import re
+
     text = text.strip()
     # Strip common prefixes
     for prefix in (
-        "project ", "in project ", "in ",
-        "issue in ", "ticket in ", "task in ",
-        "issue ", "ticket ", "task ",
+        "project ",
+        "in project ",
+        "in ",
+        "issue in ",
+        "ticket in ",
+        "task in ",
+        "issue ",
+        "ticket ",
+        "task ",
     ):
         if text.lower().startswith(prefix):
-            text = text[len(prefix):].strip()
+            text = text[len(prefix) :].strip()
             break
     # Find an uppercase project key (1-10 uppercase alphanumeric chars)
     match = re.search(r"\b([A-Z][A-Z0-9]{1,9})\b", text)
@@ -449,7 +464,7 @@ def _format_issues(issues: list) -> str:
         fields = i.get("fields", {})
         summary = fields.get("summary", "")
         status = fields.get("status", {}).get("name", "")
-        priority = fields.get("priority", {}).get("name", "") if fields.get("priority") else ""
+        fields.get("priority", {}).get("name", "") if fields.get("priority") else ""
         assignee = fields.get("assignee", {})
         assignee_name = assignee.get("displayName", "Unassigned") if assignee else "Unassigned"
         lines.append(f"{key} [{status}] {summary} ({assignee_name})")
@@ -474,6 +489,7 @@ def _format_confluence_page(page: dict) -> str:
     body_html = page.get("body", {}).get("storage", {}).get("value", "")
 
     import re
+
     text = re.sub(r"<[^>]+>", " ", body_html)
     text = re.sub(r"\s+", " ", text).strip()
 

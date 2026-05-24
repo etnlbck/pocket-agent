@@ -17,7 +17,7 @@ class DelegateCursorTool(Tool):
         "Usage: [TOOL:cursor] <prompt>  or  [TOOL:cursor] repo=<url> branch=<ref> <prompt>"
     )
 
-    def __init__(self, manager: "CursorJobManager") -> None:
+    def __init__(self, manager: CursorJobManager) -> None:
         self._manager = manager
         self._last_user_id = "default"
 

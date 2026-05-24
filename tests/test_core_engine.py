@@ -1,4 +1,5 @@
 """Pressure tests for core engine orchestration (cloud LLM mocked)."""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+pytest.importorskip("palmtop.core.engine")
 
 from palmtop.core.engine import PalmtopAgent
 from palmtop.core.goal_aligner import GoalAligner

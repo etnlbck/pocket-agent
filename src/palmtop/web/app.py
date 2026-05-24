@@ -21,15 +21,14 @@ import asyncio
 import json
 import logging
 import re
-import time
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Callable, Awaitable
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
-from starlette.routing import Route, Mount
+from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 from palmtop.persona import PersonaConfig
@@ -81,10 +80,12 @@ def create_app(
 
     # ── Health check ──────────────────────────────────────────────
     async def health(request: Request) -> Response:
-        return JSONResponse({
-            "ok": True,
-            "sessions": agent.active_sessions,
-        })
+        return JSONResponse(
+            {
+                "ok": True,
+                "sessions": agent.active_sessions,
+            }
+        )
 
     # ── Chat endpoint (SSE) ───────────────────────────────────────
     async def chat(request: Request) -> Response:
@@ -200,16 +201,22 @@ def create_app(
         # Fire-and-forget: qualify lead and send outreach email
         if outreach:
             lead = LeadInfo(
-                name=name, email=email, project=project,
-                budget=budget, timeline=timeline, referral=referral,
+                name=name,
+                email=email,
+                project=project,
+                budget=budget,
+                timeline=timeline,
+                referral=referral,
             )
             asyncio.create_task(outreach.process_lead(lead))
 
         owner = p.owner_name or "We"
-        return JSONResponse({
-            "ok": True,
-            "message": f"Thanks!  {owner} will be in touch within 24 hours.",
-        })
+        return JSONResponse(
+            {
+                "ok": True,
+                "message": f"Thanks!  {owner} will be in touch within 24 hours.",
+            }
+        )
 
     # ── CORS middleware ───────────────────────────────────────────
     async def cors_middleware(request: Request, call_next):
@@ -236,6 +243,7 @@ def create_app(
         if proto == "http":
             url = request.url.replace(scheme="https")
             from starlette.responses import RedirectResponse
+
             return RedirectResponse(str(url), status_code=301)
         return await call_next(request)
 

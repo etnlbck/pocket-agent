@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import aiosqlite
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+import aiosqlite
 
 log = logging.getLogger(__name__)
 
@@ -126,9 +127,7 @@ class StructuredMemory:
         )
         return await cursor.fetchone() is not None
 
-    async def recall(
-        self, user_id: str, category: str | None = None, limit: int = 50
-    ) -> list[Memory]:
+    async def recall(self, user_id: str, category: str | None = None, limit: int = 50) -> list[Memory]:
         if category:
             cursor = await self._db.execute(
                 """SELECT id, user_id, category, content, created_at

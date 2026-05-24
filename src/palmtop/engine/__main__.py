@@ -5,6 +5,7 @@ Examples:
   PALMTOP_AUTONOMOUS=1 uv run python -m palmtop.engine --task "..."
   uv run python -m palmtop.engine --tasks-file tasks.txt --autonomous
 """
+
 from __future__ import annotations
 
 import argparse
@@ -14,9 +15,10 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from palmtop.config.settings import Config
 from palmtop.core.engine import PalmtopAgent
 from palmtop.core.goals_paths import resolve_goals_path
+
+from palmtop.config.settings import Config
 
 
 def _audit_log_path(data_dir: Path) -> Path:
@@ -61,19 +63,20 @@ def main(argv: list[str] | None = None) -> int:
     engine_llm = None
     if cfg.cloud_heavy.api_key:
         from palmtop.inference.cloud import create_cloud_backend
-        heavy = create_cloud_backend(
-            cfg.cloud_heavy.provider, cfg.cloud_heavy.api_key, cfg.cloud_heavy.model or None
-        )
+
+        heavy = create_cloud_backend(cfg.cloud_heavy.provider, cfg.cloud_heavy.api_key, cfg.cloud_heavy.model or None)
         engine_llm = CloudLLMAdapter(heavy)
     elif cfg.cloud_light.api_key:
         from palmtop.inference.cloud import create_cloud_backend
-        light = create_cloud_backend(
-            cfg.cloud_light.provider, cfg.cloud_light.api_key, cfg.cloud_light.model or None
-        )
+
+        light = create_cloud_backend(cfg.cloud_light.provider, cfg.cloud_light.api_key, cfg.cloud_light.model or None)
         engine_llm = CloudLLMAdapter(light)
 
     if engine_llm is None:
-        print("No cloud API keys configured — engine requires ANTHROPIC_API_KEY or GOOGLE_API_KEY", file=sys.stderr)
+        print(
+            "No cloud API keys configured — engine requires ANTHROPIC_API_KEY or GOOGLE_API_KEY",
+            file=sys.stderr,
+        )
         return 1
 
     try:

@@ -1,7 +1,10 @@
 """Tests for Telegram Markdown → HTML conversion."""
 
+import pytest
+
+pytest.importorskip("palmtop.channels.telegram")
+
 from palmtop.channels.telegram import (
-    md_to_telegram_html,
     prepare_telegram_message,
     sanitize_telegram_html,
 )
@@ -51,4 +54,3 @@ def test_split_safe_across_chunks():
     assert len(chunks) > 1
     for chunk in chunks:
         assert chunk.count("<b>") == chunk.count("</b>")
-

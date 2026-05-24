@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -66,12 +66,15 @@ class GoogleCalendarTool(Tool):
             tokens = json.load(f)
 
         client = self._get_client()
-        resp = await client.post(TOKEN_URL, data={
-            "refresh_token": tokens["refresh_token"],
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
-            "grant_type": "refresh_token",
-        })
+        resp = await client.post(
+            TOKEN_URL,
+            data={
+                "refresh_token": tokens["refresh_token"],
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "grant_type": "refresh_token",
+            },
+        )
         if resp.status_code != 200:
             log.error("Token refresh failed: %s", resp.text[:200])
             self._access_token = None
@@ -177,7 +180,7 @@ class GoogleCalendarTool(Tool):
         if resp.status_code not in (200, 201):
             return f"Failed to create event: {resp.text[:200]}"
 
-        data = resp.json()
+        resp.json()
         friendly = datetime.strptime(date_str, "%Y-%m-%d").strftime("%A, %b %d")
         return f"✅ Added: {title} — {friendly}" + (f" at {time_str}" if time_str else "")
 
@@ -280,9 +283,7 @@ class GoogleCalendarTool(Tool):
 
         return "\n".join(lines)
 
-    async def list_events_structured(
-        self, start_iso: str, end_iso: str
-    ) -> list[dict]:
+    async def list_events_structured(self, start_iso: str, end_iso: str) -> list[dict]:
         """Return raw event data for monitoring/diffing.
 
         Each dict: {id, summary, start, end, status}.
@@ -312,13 +313,15 @@ class GoogleCalendarTool(Tool):
         for ev in resp.json().get("items", []):
             start_info = ev.get("start", {})
             end_info = ev.get("end", {})
-            results.append({
-                "id": ev.get("id", ""),
-                "summary": ev.get("summary", "(no title)"),
-                "start": start_info.get("dateTime", start_info.get("date", "")),
-                "end": end_info.get("dateTime", end_info.get("date", "")),
-                "status": ev.get("status", "confirmed"),
-            })
+            results.append(
+                {
+                    "id": ev.get("id", ""),
+                    "summary": ev.get("summary", "(no title)"),
+                    "start": start_info.get("dateTime", start_info.get("date", "")),
+                    "end": end_info.get("dateTime", end_info.get("date", "")),
+                    "status": ev.get("status", "confirmed"),
+                }
+            )
         return results
 
     async def _remove(self, text: str) -> str:
@@ -331,7 +334,7 @@ class GoogleCalendarTool(Tool):
 
         resp = await self._api("DELETE", f"/calendars/primary/events/{event_id}")
         if resp.status_code in (200, 204):
-            return f"Event removed."
+            return "Event removed."
         elif resp.status_code == 404:
             return "Event not found. Check the ID."
         else:

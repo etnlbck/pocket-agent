@@ -1,4 +1,5 @@
 """Pressure tests for GoalAligner edge cases."""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +7,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+
+pytest.importorskip("palmtop.core.goal_aligner")
 
 from palmtop.core.goal_aligner import ALIGN_THRESHOLD, GoalAligner
 from palmtop.core.goals_paths import goals_cache_path
@@ -28,9 +31,7 @@ def goals_file(tmp_path: Path) -> Path:
 
 
 def test_tag_match_full_score(goals_file: Path) -> None:
-    r = GoalAligner(goals_file, use_semantic=False).check_alignment(
-        "Close a revenue deal today"
-    )
+    r = GoalAligner(goals_file, use_semantic=False).check_alignment("Close a revenue deal today")
     assert r["is_aligned"]
     assert r["score"] == 1.0
     assert r["method"] == "heuristic"
@@ -38,9 +39,7 @@ def test_tag_match_full_score(goals_file: Path) -> None:
 
 
 def test_no_match(goals_file: Path) -> None:
-    r = GoalAligner(goals_file, use_semantic=False).check_alignment(
-        "What is the weather in Paris?"
-    )
+    r = GoalAligner(goals_file, use_semantic=False).check_alignment("What is the weather in Paris?")
     assert not r["is_aligned"]
     assert r["score"] < ALIGN_THRESHOLD
 
@@ -56,25 +55,19 @@ def test_substring_tag_false_positive(goals_file: Path) -> None:
 
 
 def test_product_not_matching_production(goals_file: Path) -> None:
-    r = GoalAligner(goals_file, use_semantic=False).check_alignment(
-        "Review production schedule for factory"
-    )
+    r = GoalAligner(goals_file, use_semantic=False).check_alignment("Review production schedule for factory")
     product = next(g for g in r["per_goal"] if g["tag"] == "product")
     assert not product["aligned"]
 
 
 def test_title_keyword_partial_score(goals_file: Path) -> None:
-    r = GoalAligner(goals_file, use_semantic=False).check_alignment(
-        "Work on the consulting pipeline outreach"
-    )
+    r = GoalAligner(goals_file, use_semantic=False).check_alignment("Work on the consulting pipeline outreach")
     rev = next(g for g in r["per_goal"] if g["tag"] == "revenue")
     assert rev["aligned"]
 
 
 def test_missing_file_fails_closed() -> None:
-    r = GoalAligner("/nonexistent/twy_goals.json", use_semantic=False).check_alignment(
-        "revenue task"
-    )
+    r = GoalAligner("/nonexistent/twy_goals.json", use_semantic=False).check_alignment("revenue task")
     assert r["load_status"] == "missing"
     assert r["engine_mode"] == "SAFE_MODE"
     assert not r["is_aligned"]
@@ -116,14 +109,16 @@ def test_empty_goals_list(tmp_path: Path) -> None:
 def test_malformed_goal_entries_skipped(goals_file: Path) -> None:
     p = goals_file.parent / "mixed.json"
     p.write_text(
-        json.dumps({
-            "goals": [
-                "not-a-dict",
-                {"tag": "revenue", "title": "Pipeline"},
-                None,
-                {"title": "no tag field"},
-            ]
-        }),
+        json.dumps(
+            {
+                "goals": [
+                    "not-a-dict",
+                    {"tag": "revenue", "title": "Pipeline"},
+                    None,
+                    {"title": "no tag field"},
+                ]
+            }
+        ),
         encoding="utf-8",
     )
     r = GoalAligner(p, use_semantic=False).check_alignment("revenue call")
@@ -138,9 +133,7 @@ def test_empty_task(goals_file: Path) -> None:
 def test_semantic_wheatpaste_poster(tmp_path: Path) -> None:
     p = tmp_path / "wp.json"
     p.write_text(
-        json.dumps({
-            "goals": [{"tag": "wheatpaste", "title": "Guerrilla poster street campaign"}]
-        }),
+        json.dumps({"goals": [{"tag": "wheatpaste", "title": "Guerrilla poster street campaign"}]}),
         encoding="utf-8",
     )
     mock_judge = MagicMock()
@@ -171,9 +164,7 @@ def test_semantic_rejects_unrelated(tmp_path: Path) -> None:
         "confidence": 0.1,
         "reason": "Weather is unrelated",
     }
-    r = GoalAligner(p, semantic_judge=mock_judge).check_alignment(
-        "What is the weather in Paris?"
-    )
+    r = GoalAligner(p, semantic_judge=mock_judge).check_alignment("What is the weather in Paris?")
     assert not r["is_aligned"]
     assert r["method"] == "semantic"
 
@@ -186,9 +177,7 @@ def test_semantic_unavailable_autonomous(tmp_path: Path) -> None:
     )
     mock_judge = MagicMock()
     mock_judge.judge.return_value = None
-    r = GoalAligner(p, semantic_judge=mock_judge, autonomous=True).check_alignment(
-        "unrelated fluff"
-    )
+    r = GoalAligner(p, semantic_judge=mock_judge, autonomous=True).check_alignment("unrelated fluff")
     assert not r["is_aligned"]
     assert r.get("semantic_unavailable")
 

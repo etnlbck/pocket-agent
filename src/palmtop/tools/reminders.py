@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import aiosqlite
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Callable, Awaitable
 from zoneinfo import ZoneInfo
+
+import aiosqlite
 
 from palmtop.tools.base import Tool
 
@@ -86,9 +87,7 @@ class ReminderTool(Tool):
                 except Exception:
                     log.exception("Failed to send reminder #%d", rid)
                     continue
-            await self._db.execute(
-                "UPDATE reminders SET status = 'fired' WHERE id = ?", (rid,)
-            )
+            await self._db.execute("UPDATE reminders SET status = 'fired' WHERE id = ?", (rid,))
             await self._db.commit()
 
     async def run(self, query: str) -> str:
@@ -108,7 +107,7 @@ class ReminderTool(Tool):
         if not message:
             return "Need a reminder message after the time."
 
-        cursor = await self._db.execute(
+        await self._db.execute(
             "INSERT INTO reminders (remind_at, message) VALUES (?, ?)",
             (remind_at, message),
         )

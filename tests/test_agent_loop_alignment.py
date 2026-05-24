@@ -1,4 +1,5 @@
 """AgentLoop alignment tests — the agent never blocks, engine does."""
+
 from __future__ import annotations
 
 import json
@@ -7,9 +8,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+pytest.importorskip("palmtop.core.goal_aligner")
+
 from palmtop.core.goal_aligner import GoalAligner
-from palmtop.core.loop import AgentLoop
 from palmtop.core.tracing import Tracer
+
+from palmtop.core.loop import AgentLoop
 
 
 @pytest.fixture

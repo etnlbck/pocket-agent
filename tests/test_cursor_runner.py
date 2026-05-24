@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+pytest.importorskip("palmtop.core.evaluator")
+
 from palmtop.config.settings import CursorConfig
 from palmtop.core.loop import AgentLoop
 from palmtop.cursor.runner import (
