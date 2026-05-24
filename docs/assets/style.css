@@ -150,6 +150,12 @@ img { max-width: 100%; height: auto; }
   flex-wrap: wrap;
 }
 
+.hero-ph-badge {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
