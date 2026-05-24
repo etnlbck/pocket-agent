@@ -44,11 +44,12 @@
     <h2 id="overview">Overview</h2>
     <p>The system has four layers:</p>
     <ol>
-      <li><strong>Channels</strong> &mdash; Telegram, SMS, web chat (how users reach the agent)</li>
+      <li><strong>Channels</strong> &mdash; Telegram, Discord, Slack, Matrix, IRC, WhatsApp, XMPP, SMS, email, web chat, ScuttleBot (how users reach the agent)</li>
       <li><strong>Core loop</strong> &mdash; message routing, tool dispatch, memory management</li>
       <li><strong>Inference</strong> &mdash; local model + cloud LLM cascade</li>
       <li><strong>Tools + Storage</strong> &mdash; external integrations and persistent state</li>
     </ol>
+    <p>All channels run concurrently via the <code>ChannelRunner</code>, sharing the same AgentLoop instance. Each channel implements a simple protocol: <code>start(loop)</code>, <code>stop()</code>, <code>send_message(user_id, text)</code>.</p>
 
     <div class="arch-diagram">
       <pre>

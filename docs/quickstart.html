@@ -29,6 +29,7 @@
     <a href="#android">Android (Termux)</a>
     <a href="#configure">Configure</a>
     <a href="#run">Run</a>
+    <a href="#channels">Channels</a>
     <h4>Deploy</h4>
     <a href="#cloudflare-tunnel">Cloudflare Tunnel</a>
     <a href="#git-push-deploy">Git-push deploy</a>
@@ -44,7 +45,7 @@
       <li><strong>Python 3.11+</strong></li>
       <li><strong><a href="https://docs.astral.sh/uv/">uv</a></strong> &mdash; fast Python package manager</li>
       <li>At least one API key: <code>ANTHROPIC_API_KEY</code> or <code>GOOGLE_API_KEY</code></li>
-      <li>A Telegram bot token from <a href="https://t.me/botfather" target="_blank" rel="noopener">@BotFather</a></li>
+      <li>At least one channel configured (Telegram, Discord, Slack, IRC, etc.)</li>
     </ul>
 
     <div class="callout">
@@ -65,10 +66,14 @@ bash bootstrap_macos.sh</code></pre>
 
     <p><span class="step">3</span> <strong>Set secrets</strong></p>
     <pre><code>export ANTHROPIC_API_KEY="sk-ant-..."
-export TELEGRAM_BOT_TOKEN="123456:ABC..."</code></pre>
+export TELEGRAM_BOT_TOKEN="123456:ABC..."  # or your channel's token</code></pre>
 
     <p><span class="step">4</span> <strong>Run</strong></p>
     <pre><code>uv run python -m palmtop</code></pre>
+
+    <div class="callout">
+      <p><strong>Multi-channel:</strong> Run multiple channels simultaneously by setting <code>channels = ["telegram", "slack", "irc"]</code> in config.toml. All channels share the same agent. See the <a href="configuration#channels">Channels reference</a> for setup details.</p>
+    </div>
 
     <h2 id="android">Android (Termux)</h2>
 
@@ -117,12 +122,22 @@ services = [
     <p>See the full <a href="configuration">Configuration reference</a> for all options.</p>
 
     <h2 id="run">Verify it's working</h2>
-    <p>Once the agent starts, you should see:</p>
+    <p>Once the agent starts, you should see output like:</p>
     <pre><code>08:00:01 Cloud heavy: anthropic / claude-sonnet-4-5
 08:00:01 Telegram bot started
 08:00:01 Web channel started on 0.0.0.0:8000
 08:00:01 Ready.</code></pre>
-    <p>Send a message to your Telegram bot. If it replies, you're live.</p>
+    <p>Send a message via your configured channel. If the agent replies, you're live.</p>
+
+    <h3 id="channels">Channel extras</h3>
+    <p>Some channels need optional dependencies. Install only what you use:</p>
+    <pre><code>uv sync --extra telegram   # python-telegram-bot
+uv sync --extra discord    # discord.py
+uv sync --extra slack      # slack-bolt + slack-sdk
+uv sync --extra matrix     # matrix-nio
+uv sync --extra xmpp       # slixmpp
+uv sync --extra all        # everything</code></pre>
+    <p>IRC, SMS, ScuttleBot, email, and WhatsApp have zero extra dependencies.</p>
 
     <h2 id="cloudflare-tunnel">Expose with Cloudflare Tunnel</h2>
     <p>To make the web channel accessible from the internet:</p>

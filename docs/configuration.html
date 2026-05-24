@@ -36,6 +36,7 @@
     <a href="#monitor">Monitor</a>
     <a href="#voice">Voice</a>
     <a href="#env-vars">Environment variables</a>
+    <a href="#security">Security</a>
   </aside>
 
   <main class="docs-content">
@@ -132,6 +133,17 @@ provider = "anthropic"                # capable
     <p>Set <code>ANTHROPIC_API_KEY</code>, <code>GOOGLE_API_KEY</code>, and/or <code>OPENAI_API_KEY</code> as environment variables.</p>
 
     <h2 id="channels">Channels</h2>
+    <p>Palmtop supports 10 messaging channels. Run one or many simultaneously.</p>
+
+    <h3>Multi-channel mode</h3>
+    <p>Run multiple channels at once &mdash; all share the same AgentLoop (memory, tools, inference):</p>
+    <pre><code># Single channel (default):
+channel = "telegram"
+
+# Multi-channel mode:
+channels = ["telegram", "slack", "irc", "email"]</code></pre>
+    <p>Supported values: <code>telegram</code>, <code>sms</code>, <code>email</code>, <code>discord</code>, <code>slack</code>, <code>matrix</code>, <code>irc</code>, <code>whatsapp</code>, <code>xmpp</code>, <code>scuttlebot</code>.</p>
+
     <h3>Telegram</h3>
     <pre><code>[telegram]
 # Set TELEGRAM_BOT_TOKEN env var
@@ -143,6 +155,71 @@ enabled = false
 allowed_numbers = ["+15551234567"]
 allowed_sender_names = []
 poll_interval = 5</code></pre>
+
+    <h3>Email (as a channel)</h3>
+    <p>Polls your AgentMail inbox and routes inbound emails through the agent. Add <code>"email"</code> to <code>channels</code>.</p>
+    <pre><code>[email]
+# api_key = "am_..."           # or set AGENTMAIL_API_KEY
+# inbox_id = "inbox_..."       # or set AGENTMAIL_INBOX_ID
+# poll_interval = 30           # seconds between inbox checks
+# allowed_senders = []         # empty = accept all</code></pre>
+
+    <h3>Discord</h3>
+    <p>Requires <code>uv sync --extra discord</code> (installs discord.py).</p>
+    <pre><code>[discord]
+# Set DISCORD_BOT_TOKEN env var
+# allowed_users = []     # Discord user IDs (integers)
+# guild_id = 0           # restrict to one server (0 = any)
+# channel_id = 0         # restrict to one text channel (0 = any)</code></pre>
+
+    <h3>Slack</h3>
+    <p>Socket Mode &mdash; no public URL needed. Requires <code>uv sync --extra slack</code>.</p>
+    <pre><code>[slack]
+# Set SLACK_BOT_TOKEN and SLACK_APP_TOKEN env vars
+# allowed_users = []     # Slack user IDs (e.g. "U12345ABC")</code></pre>
+
+    <h3>Matrix</h3>
+    <p>Works with matrix.org and self-hosted homeservers. Requires <code>uv sync --extra matrix</code>.</p>
+    <pre><code>[matrix]
+# Set MATRIX_HOMESERVER, MATRIX_USER_ID, MATRIX_ACCESS_TOKEN env vars
+# allowed_users = []     # e.g. "@alice:matrix.org"
+# allowed_rooms = []     # e.g. "!abc123:matrix.org"</code></pre>
+
+    <h3>IRC</h3>
+    <p>Zero extra dependencies &mdash; raw asyncio sockets with the IRC protocol.</p>
+    <pre><code>[irc]
+# server = "irc.libera.chat"
+# port = 6697
+# nick = "palmtop"
+# channels = ["#your-channel"]
+# use_ssl = true
+# allowed_users = []     # IRC nicks (case-insensitive)</code></pre>
+
+    <h3>WhatsApp</h3>
+    <p>Official WhatsApp Business Cloud API. Free tier: 1,000 conversations/month.</p>
+    <pre><code>[whatsapp]
+# Set WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN, WHATSAPP_VERIFY_TOKEN env vars
+# app_secret = ""        # optional webhook signature verification
+# allowed_numbers = ["+1234567890"]
+# webhook_port = 8080
+# webhook_path = "/webhook/whatsapp"</code></pre>
+
+    <h3>XMPP / Jabber</h3>
+    <p>Works with any XMPP server (Prosody, ejabberd). Requires <code>uv sync --extra xmpp</code>.</p>
+    <pre><code>[xmpp]
+# Set XMPP_JID and XMPP_PASSWORD env vars
+# allowed_jids = ["you@your-server.org"]
+# mucs = ["room@conference.server.org"]
+# muc_nick = "palmtop"</code></pre>
+
+    <h3>ScuttleBot</h3>
+    <p>Multi-agent coordination via <a href="https://github.com/ConflictHQ/scuttlebot" target="_blank">ScuttleBot</a> IRC backplane. Zero extra dependencies.</p>
+    <pre><code>[scuttlebot]
+# server = "localhost"
+# port = 6667
+# nick = "palmtop"
+# channels = ["#ops", "#engineering"]
+# broadcast_tools = true  # stream tool calls to coordination channels</code></pre>
 
     <h2 id="tools">Tools</h2>
     <p>All tools are optional. Configure only what you need.</p>
@@ -238,7 +315,18 @@ tts_voice = "Kore"          # Gemini voices: Kore, Puck, Charon, etc.</code></pr
       <tbody>
         <tr><td><code>ANTHROPIC_API_KEY</code></td><td>One of these</td><td>Anthropic API key</td></tr>
         <tr><td><code>GOOGLE_API_KEY</code></td><td>One of these</td><td>Google AI API key</td></tr>
-        <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Yes</td><td>From @BotFather</td></tr>
+        <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Yes*</td><td>From @BotFather</td></tr>
+        <tr><td><code>DISCORD_BOT_TOKEN</code></td><td>No</td><td>Discord bot token</td></tr>
+        <tr><td><code>SLACK_BOT_TOKEN</code></td><td>No</td><td>Slack Bot User OAuth Token</td></tr>
+        <tr><td><code>SLACK_APP_TOKEN</code></td><td>No</td><td>Slack App-Level Token (Socket Mode)</td></tr>
+        <tr><td><code>MATRIX_HOMESERVER</code></td><td>No</td><td>Matrix homeserver URL</td></tr>
+        <tr><td><code>MATRIX_USER_ID</code></td><td>No</td><td>Matrix bot user ID</td></tr>
+        <tr><td><code>MATRIX_ACCESS_TOKEN</code></td><td>No</td><td>Matrix access token</td></tr>
+        <tr><td><code>WHATSAPP_PHONE_NUMBER_ID</code></td><td>No</td><td>WhatsApp Business phone number ID</td></tr>
+        <tr><td><code>WHATSAPP_ACCESS_TOKEN</code></td><td>No</td><td>Meta Graph API access token</td></tr>
+        <tr><td><code>WHATSAPP_VERIFY_TOKEN</code></td><td>No</td><td>Webhook verification token</td></tr>
+        <tr><td><code>XMPP_JID</code></td><td>No</td><td>XMPP bot JID (e.g. bot@server.org)</td></tr>
+        <tr><td><code>XMPP_PASSWORD</code></td><td>No</td><td>XMPP account password</td></tr>
         <tr><td><code>AGENTMAIL_API_KEY</code></td><td>No</td><td>AgentMail inbox access</td></tr>
         <tr><td><code>ATLASSIAN_API_TOKEN</code></td><td>No</td><td>Jira/Confluence access</td></tr>
         <tr><td><code>BRAVE_API_KEYS</code></td><td>No</td><td>Comma-separated Brave search keys</td></tr>
@@ -248,6 +336,25 @@ tts_voice = "Kore"          # Gemini voices: Kore, Puck, Charon, etc.</code></pr
         <tr><td><code>CURSOR_API_KEY</code></td><td>No</td><td>Cursor Cloud Agents</td></tr>
       </tbody>
     </table>
+    <p><small>* Required only if Telegram is your channel. At minimum you need one LLM key + one channel configured.</small></p>
+
+    <h2 id="security">Security</h2>
+    <p>Palmtop includes a supply chain audit tool that checks dependencies for known attacks:</p>
+    <pre><code># Run locally
+python scripts/audit_supply_chain.py --project .
+
+# Strict mode (CI — fails on any finding)
+python scripts/audit_supply_chain.py --strict --project .
+
+# With PyPI metadata checks (slower, requires network)
+python scripts/audit_supply_chain.py --pypi --project .</code></pre>
+    <p>The audit runs automatically in CI on every push and pull request. It checks for:</p>
+    <ul>
+      <li>Known malicious packages (blocklist)</li>
+      <li>Typosquatting (edit distance from popular packages)</li>
+      <li>Suspicious install scripts (setup.py hooks)</li>
+      <li>Yanked versions on PyPI</li>
+    </ul>
 
   </main>
 </div>
