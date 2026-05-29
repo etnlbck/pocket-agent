@@ -28,5 +28,10 @@ async def request_deploy_blessing(
     # Arm the gate BEFORE prompting so /approve can't arrive before wait() starts.
     gate.prepare(summary)
     msg = f"\U0001f512 **{platform} deploy approval needed**\n\n{summary}\n\nReply /approve or /deny"
-    await send_fn(user_id, msg)
+    try:
+        await send_fn(user_id, msg)
+    except Exception:
+        log.exception("Failed to send deploy blessing prompt")
+        gate.deny()
+        return False
     return await asyncio.to_thread(gate.wait)
