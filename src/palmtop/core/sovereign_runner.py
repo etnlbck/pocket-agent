@@ -42,9 +42,12 @@ def _append_engine_audit(data_dir: Path | None, record: dict) -> None:
     if data_dir is None:
         return
     path = Path(data_dir) / "engine_runs.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, default=str) + "\n")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, default=str) + "\n")
+    except OSError:
+        log.debug("Could not append engine audit to %s", path, exc_info=True)
 
 
 async def run_sovereign_engine(
