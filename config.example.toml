@@ -175,7 +175,8 @@ n_threads = 4
 # phone_number_id = ""
 # access_token = ""
 # verify_token = ""              # for webhook verification challenge
-# app_secret = ""                # optional — verifies webhook signatures
+# app_secret = ""                # REQUIRED — without it, inbound webhooks are rejected
+#                                # (can't verify the request actually came from Meta)
 # allowed_numbers = ["+1234567890"]
 # webhook_port = 8080
 # webhook_path = "/webhook/whatsapp"
@@ -268,7 +269,19 @@ mode = "soft"           # "soft" = warn and continue; "hard" = refuse misaligned
 # goals_path = ""       # empty = auto-resolve docs/plans then data/docs/plans
 use_semantic = true     # Ollama judges tasks that fail keyword match (localhost:11434)
 
-# Sovereign engine — the agent can trigger it from chat:
+# ── Owner identity ───────────────────────────────────────────────────
+# The engine: / cursor: commands run autonomous tasks and cloud code
+# execution — far more powerful than a normal chat. They are restricted to
+# the owner(s) listed here, regardless of which channel admits the sender.
+# IDs are channel-qualified (the same form channels log for a sender):
+#   telegram:<numeric user id>   sms:+<E.164 number>   slack:U0123   discord:<id>
+# SECURITY: if this list is empty, engine: / cursor: are refused on EVERY
+# channel (fail closed). Set it to use those commands.
+[agent]
+owners = []
+# owners = ["telegram:123456789", "sms:+15551234567"]
+
+# Sovereign engine — the agent can trigger it from chat (owners only):
 #   /engine draft poster copy        (Telegram)
 #   /claude draft poster copy        (Telegram alias — same as /engine)
 #   engine: draft poster copy        (Telegram or SMS)

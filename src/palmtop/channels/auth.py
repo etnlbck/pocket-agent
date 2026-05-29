@@ -36,6 +36,16 @@ def sender_allowed(
     return sender in allowed
 
 
+def owner_key(user_id: str, source: str = "") -> str:
+    """Channel-qualified identity used for owner checks.
+
+    Channels that already prefix ``user_id`` (e.g. ``slack:U1``, ``sms:+1...``)
+    pass it through unchanged; bare-ID channels (Telegram) pass ``source`` so the
+    result matches how owners are listed in config (e.g. ``telegram:123``).
+    """
+    return f"{source}:{user_id}" if source else user_id
+
+
 def log_access_policy(
     log: logging.Logger,
     channel: str,

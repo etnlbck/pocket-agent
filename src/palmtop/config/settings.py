@@ -214,6 +214,20 @@ class SmsConfig:
 
 
 @dataclass
+class AgentConfig:
+    """Identity of the agent's owner(s).
+
+    Owners are the only senders allowed to trigger the privileged engine: /
+    cursor: commands (autonomous tasks, cloud code execution). IDs are
+    channel-qualified, matching how channels identify senders, e.g.
+    "telegram:123456789", "sms:+15551234567", "slack:U0123". Empty = those
+    commands are refused on every channel (fail closed).
+    """
+
+    owners: list[str] = field(default_factory=list)
+
+
+@dataclass
 class AdminConfig:
     """Health/admin endpoint config."""
 
@@ -311,6 +325,7 @@ class Config:
     runtime: Runtime = field(default_factory=detect_runtime)
     channel: Channel = field(default_factory=_default_channel)
     channels: list[Channel] = field(default_factory=list)  # multi-channel mode
+    agent: AgentConfig = field(default_factory=AgentConfig)
     admin: AdminConfig = field(default_factory=AdminConfig)
     persona: PersonaConfig = field(default_factory=PersonaConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)
@@ -494,6 +509,10 @@ class Config:
                 for k, v in raw["admin"].items():
                     if hasattr(cfg.admin, k):
                         setattr(cfg.admin, k, v)
+            if "agent" in raw:
+                for k, v in raw["agent"].items():
+                    if hasattr(cfg.agent, k):
+                        setattr(cfg.agent, k, v)
             if "channels" in raw:
                 cfg.channels = raw["channels"]
             if "channel" in raw:

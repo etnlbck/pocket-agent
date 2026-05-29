@@ -422,6 +422,7 @@ def main() -> None:
         blessing_gate=blessing_gate,
         cursor_manager=cursor_manager,
         system_prompt=build_system_prompt(cfg.persona),
+        owner_ids=set(cfg.agent.owners),
     )
 
     # ── Async startup ────────────────────────────────────────────────

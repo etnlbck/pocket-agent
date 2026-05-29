@@ -236,7 +236,7 @@ class TelegramChannel:
         log.info("Engine command from %s: %s", uid, task[:80])
 
         async with _TypingIndicator(update.effective_chat.id, context.bot):
-            reply = await self._agent.run_sovereign_engine(task, user_id=str(uid))
+            reply = await self._agent.run_sovereign_engine(task, user_id=str(uid), source="telegram")
         await self._send_reply(update.message, reply)
 
     async def _on_cursor(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -248,7 +248,7 @@ class TelegramChannel:
         log.info("Cursor command from %s: %s", uid, task[:80])
 
         async with _TypingIndicator(update.effective_chat.id, context.bot):
-            reply = await self._agent.run_cursor_delegate(task, user_id=str(uid))
+            reply = await self._agent.run_cursor_delegate(task, user_id=str(uid), source="telegram")
         await self._send_reply(update.message, reply)
 
     async def _on_voice_toggle(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -345,7 +345,7 @@ class TelegramChannel:
             if hasattr(self._agent, "handle_stream"):
                 # Collect the final reply from the streaming path
                 async with _TypingIndicator(update.effective_chat.id, context.bot):
-                    async for event, data in self._agent.handle_stream(transcript, user_id=str(uid)):
+                    async for event, data in self._agent.handle_stream(transcript, user_id=str(uid), source="telegram"):
                         if event == "done":
                             reply_text = data
                         elif event == "error":
@@ -355,7 +355,7 @@ class TelegramChannel:
                     await self._send_reply(update.message, reply_text)
             else:
                 async with _TypingIndicator(update.effective_chat.id, context.bot):
-                    reply_text = await self._agent.handle(transcript, user_id=str(uid))
+                    reply_text = await self._agent.handle(transcript, user_id=str(uid), source="telegram")
                 await self._send_reply(update.message, reply_text)
 
             # Synthesize and send voice reply
@@ -434,7 +434,7 @@ class TelegramChannel:
             reply_text = await self._on_message_stream(update, context, text, str(uid))
         else:
             async with _TypingIndicator(update.effective_chat.id, context.bot):
-                reply_text = await self._agent.handle(text, user_id=str(uid))
+                reply_text = await self._agent.handle(text, user_id=str(uid), source="telegram")
             await self._send_reply(update.message, reply_text)
 
         # Voice reply if the user toggled /voice on
@@ -460,7 +460,7 @@ class TelegramChannel:
         final_reply = ""
 
         async with _TypingIndicator(chat_id, bot):
-            async for event, data in self._agent.handle_stream(text, user_id=user_id):
+            async for event, data in self._agent.handle_stream(text, user_id=user_id, source="telegram"):
                 if event == "status":
                     # Status updates — if we haven't sent a message yet, that's fine
                     # The typing indicator handles the "thinking" UX

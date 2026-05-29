@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from palmtop.channels.auth import log_access_policy, sender_allowed
+from palmtop.channels.auth import log_access_policy, owner_key, sender_allowed
 
 
 class TestSenderAllowed:
@@ -170,3 +170,62 @@ class TestSmsListenerNumberAuth:
     def test_rcs_rejects_unknown_number_in_title(self):
         sl = self._listener(allowed_numbers=["+15551234567"])
         assert sl._rcs_sender_allowed("+19998887777") is False
+
+
+class TestOwnerKey:
+    """Channel-qualified identity used to match against [agent] owners."""
+
+    def test_bare_id_qualified_with_source(self):
+        # Telegram passes a bare id + source → "telegram:123".
+        assert owner_key("123", "telegram") == "telegram:123"
+
+    def test_prefixed_id_passthrough(self):
+        # Other channels already prefix; no source → unchanged.
+        assert owner_key("slack:U1") == "slack:U1"
+        assert owner_key("sms:+15551234567") == "sms:+15551234567"
+
+
+class TestOwnerGate:
+    """engine:/cursor: restricted to configured owners — issue #29."""
+
+    def _loop(self, owners):
+        # The full palmtop.core engine package isn't always present in a
+        # checkout; skip (don't error) when AgentLoop can't be imported.
+        pytest.importorskip("palmtop.core.loop")
+        from palmtop.core.loop import AgentLoop
+
+        return AgentLoop(AsyncMock(), owner_ids=owners)
+
+    @pytest.mark.asyncio
+    async def test_fails_closed_without_owners(self):
+        loop = self._loop(set())
+        reply = await loop.run_sovereign_engine("do x", user_id="123", source="telegram")
+        assert "Not authorized" in reply
+
+    @pytest.mark.asyncio
+    async def test_non_owner_refused(self):
+        loop = self._loop({"telegram:999"})
+        reply = await loop.run_sovereign_engine("do x", user_id="123", source="telegram")
+        assert "Not authorized" in reply
+
+    @pytest.mark.asyncio
+    async def test_owner_passes_gate(self):
+        # Owner clears the gate; falls through to the "engine disabled" message
+        # (no sovereign engine wired) — the point is it is NOT "Not authorized".
+        loop = self._loop({"telegram:123"})
+        reply = await loop.run_sovereign_engine("do x", user_id="123", source="telegram")
+        assert "Not authorized" not in reply
+
+    @pytest.mark.asyncio
+    async def test_prefixed_channel_owner_matches_without_source(self):
+        # Channels other than Telegram already pass a channel-qualified user_id.
+        loop = self._loop({"slack:U1"})
+        reply = await loop.run_cursor_delegate("do x", user_id="slack:U1")
+        assert "Not authorized" not in reply
+
+    @pytest.mark.asyncio
+    async def test_engine_prefix_path_enforces_owner(self):
+        # The "engine: ..." prefix typed as a normal message is gated too.
+        loop = self._loop(set())
+        reply = await loop.handle("engine: do x", user_id="sms:+15551234567")
+        assert "Not authorized" in reply
