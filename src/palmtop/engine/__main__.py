@@ -15,10 +15,9 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from palmtop.config.settings import Config
 from palmtop.core.engine import PalmtopAgent
 from palmtop.core.goals_paths import resolve_goals_path
-
-from palmtop.config.settings import Config
 
 
 def _audit_log_path(data_dir: Path) -> Path:
