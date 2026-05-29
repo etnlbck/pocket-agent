@@ -235,6 +235,9 @@ class TestWhatsAppWebhookSignature:
     """Webhook authenticity — issue #28 (fail closed without app_secret)."""
 
     def _channel(self, app_secret: str = ""):
+        # The webhook handlers construct Starlette responses; skip (don't fail)
+        # when the optional `web` dependency isn't installed (e.g. CI --extra dev).
+        pytest.importorskip("starlette")
         ch = WhatsAppChannel(
             phone_number_id="123",
             access_token="tok",
